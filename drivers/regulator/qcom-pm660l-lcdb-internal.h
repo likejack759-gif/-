@@ -2,6 +2,7 @@
 #ifndef __QCOM_PM660L_LCDB_INTERNAL_H__
 #define __QCOM_PM660L_LCDB_INTERNAL_H__
 
+#define PM660L_LCDB_BASE             0xec00U
 #define PM660L_LCDB_MIN_UV              4000000U
 #define PM660L_LCDB_MAX_UV              6000000U
 #define PM660L_LCDB_N_VOLTAGES          32U
