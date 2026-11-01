@@ -125,17 +125,15 @@ static int pm660l_lcdb_enable_wa(struct pm660l_lcdb *lcdb)
 	 * on/off cycle on every revision. Only PMIC revisions below v2.0
 	 * additionally require the NCP SCP-disable toggle.
 	 */
-	ret = regmap_update_bits(lcdb->regmap,
-				 lcdb->base + PM660L_LCDB_ENABLE_REG,
-				 PM660L_LCDB_MODULE_EN_BIT,
-				 PM660L_LCDB_MODULE_EN_BIT);
+	ret = regmap_write(lcdb->regmap,
+			   lcdb->base + PM660L_LCDB_ENABLE_REG,
+			   PM660L_LCDB_MODULE_EN_BIT);
 	if (ret)
 		return ret;
 	lcdb->module_enabled = true;
 
-	ret = regmap_update_bits(lcdb->regmap,
-				 lcdb->base + PM660L_LCDB_ENABLE_REG,
-				 PM660L_LCDB_MODULE_EN_BIT, 0);
+	ret = regmap_write(lcdb->regmap,
+			    lcdb->base + PM660L_LCDB_ENABLE_REG, 0);
 	if (ret) {
 		lcdb->fault_latched = true;
 		return ret;
@@ -195,10 +193,9 @@ static int pm660l_lcdb_module_enable(struct pm660l_lcdb *lcdb,
 		return ret;
 	}
 
-	ret = regmap_update_bits(lcdb->regmap,
-				 lcdb->base + PM660L_LCDB_ENABLE_REG,
-				 PM660L_LCDB_MODULE_EN_BIT,
-				 PM660L_LCDB_MODULE_EN_BIT);
+	ret = regmap_write(lcdb->regmap,
+			   lcdb->base + PM660L_LCDB_ENABLE_REG,
+			   PM660L_LCDB_MODULE_EN_BIT);
 	if (ret) {
 		int disable_ret = pm660l_lcdb_module_disable(lcdb);
 
@@ -228,9 +225,8 @@ static int pm660l_lcdb_module_disable(struct pm660l_lcdb *lcdb)
 {
 	int ret;
 
-	ret = regmap_update_bits(lcdb->regmap,
-				 lcdb->base + PM660L_LCDB_ENABLE_REG,
-				 PM660L_LCDB_MODULE_EN_BIT, 0);
+	ret = regmap_write(lcdb->regmap,
+			    lcdb->base + PM660L_LCDB_ENABLE_REG, 0);
 	if (ret) {
 		unsigned int val;
 		int read_ret;
