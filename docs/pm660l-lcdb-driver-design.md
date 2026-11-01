@@ -204,15 +204,17 @@ Implemented in this checkpoint:
 
 Important limitations:
 - No full v7.3.1 checkout was available, so the driver has not been compiled.
-- Kconfig/Makefile integration is documented in
-  docs/pm660l-lcdb-integration.md but has not yet been applied to a complete
-  kernel tree.
-- The SC interrupt SID 2/3 discrepancy is unresolved; no board DTS node is
-  added and no interrupt routing is assumed.
-- The IRQ is optional in this first code checkpoint. Without it, automatic
-  SC recovery is unavailable; do not treat the driver as production-ready.
-- No regulator binding, KUnit fake-regmap tests, sparse, dt_binding_check,
-  dtbs_check, full kernel build or hardware test has been run.
+- Kconfig/Makefile integration fragments are under patches/pm660l/ and
+  have not yet been applied to a complete kernel tree.
+- The full vendor DTS confirms the LCDB child is under PM660L USID 3 and
+  the SC interrupt specifier also names SID 3. This routing is verified.
+- The driver now requires the named sc-irq on PMIC revisions using IRQ-based
+  recovery; older revisions use the NCP SCP workaround.
+- A PM660L-specific YAML binding has been drafted, but has not yet passed
+  dt_binding_check. No PM660L DTSI node or Platina consumer mapping has
+  been applied to the target source tree.
+- No KUnit fake-regmap tests, sparse, dt_binding_check, dtbs_check, full
+  kernel build or hardware test has been run.
 - The implementation does not yet expose vendor touch-wake class controls,
   current limits, soft-start configuration or debug interfaces.
 
