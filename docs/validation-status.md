@@ -199,3 +199,12 @@ regmap fault-injection tests and full v7.3.1 build integration.
   tests/pm660l-lcdb-selector-test.c -o selector-test
   ./selector-test
   Result: exit status 0; output "PM660L LCDB helper tests: PASS".
+
+
+- Review refinement: corrected the output map helper to accept voltage
+  request intervals that extend outside the regulator's physical range,
+  provided a supported selector remains within the complete interval.
+  Added tests for 3.9-4.1 V -> 4.0 V, 5.9-6.1 V -> 5.9 V, and a request
+  whose minimum exceeds the hardware maximum.
+- Re-ran the host fixture with -Wall -Wextra -Werror; exit status 0,
+  output "PM660L LCDB helper tests: PASS".
