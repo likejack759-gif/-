@@ -636,7 +636,7 @@ static irqreturn_t pm660l_lcdb_sc_irq_thread(int irq, void *data)
 		goto fault_locked;
 	}
 
-	dev_warn(lcdb->dev, "LCDB short-circuit event recovered (%u/%u)\\n",
+	dev_warn(lcdb->dev, "LCDB short-circuit event recovered (%u/%u)\n",
 		 lcdb->sc_count, PM660L_LCDB_SC_RETRY_MAX);
 	goto handled;
 
