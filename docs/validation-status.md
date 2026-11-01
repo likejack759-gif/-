@@ -124,3 +124,30 @@ target. Because this initial series contains no driver patch, the DTS change
 is suitable for a separate SoC-tree posting; if later combined with driver
 patches, it belongs at the end of that combined series. The final packaging
 must follow the target maintainer's current preference.
+
+
+## Upstream LCDB series review and PM660L design (2026-11-01)
+
+- Reviewed the October 2026 Qualcomm LCDB v1/v2 driver and v2 binding
+  postings. They explicitly exclude PM660L because its boost programming
+  differs; the posted binding only describes PM8150L with PMI632/PM6150L
+  fallbacks.
+- Checked the exact target ref gregkh/linux:v7.3.1 for
+  drivers/regulator/qcom-lcdb-regulator.c; the file is absent (404).
+  The mailing-list series is therefore a design reference, not an available
+  v7.3.1 driver and not a merged dependency.
+- Reviewed v2 implementation details. Useful patterns include a shared
+  mutex, per-output request mask, regulator linear ranges, boost-first
+  sequencing, staged voltage state and fault notifications. Identified
+  handoff/status and fault-shutdown error cases that our PM660L design must
+  handle explicitly.
+- Added docs/upstream-lcdb-series-review.md with source links and review
+  findings.
+- Added docs/pm660l-lcdb-driver-design.md with state model, probe handoff,
+  locking, voltage transaction, SC handling, test matrix and patch split.
+- Extended docs/regulator-patch-requirements.md with the new upstream-derived
+  acceptance conditions.
+- Corrected the requirements-document reference in the PM660L audit.
+
+No driver source code has been implemented, compiled or hardware-tested in
+this step. This is a verified upstream-reference review and design milestone.
