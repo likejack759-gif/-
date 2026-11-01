@@ -501,11 +501,19 @@ static int pm660l_lcdb_set_voltage_sel(struct regulator_dev *rdev,
 		ret = regmap_update_bits(lcdb->regmap,
 					 lcdb->base + PM660L_LCDB_BST_VOLT_REG,
 					 GENMASK(4, 0), new_bst_sel);
-		if (ret)
-			dev_err(lcdb->dev,
-				"output voltage changed but boost reduction failed: %d\n",
-				ret);
+		if (ret) {
+			rollback_ret = regmap_update_bits(lcdb->regmap,
+						  lcdb->base + PM660L_LCDB_BST_VOLT_REG,
+						  GENMASK(4, 0), old_bst_sel);
+			if (rollback_ret) {
+				lcdb->fault_latched = true;
+				dev_err(lcdb->dev,
+					"boost reduction failed (%d), restoring old boost failed (%d)\n",
+					ret, rollback_ret);
+			}
+		}
 	}
+
 
 out:
 	mutex_unlock(&lcdb->lock);
