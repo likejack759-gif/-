@@ -116,19 +116,34 @@ def main() -> int:
         dtsi[dtsi_index:]
     )
 
-    for rel, src in sources.items():
-        dst = kernel / rel
-        dst.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(src, dst)
+    original_texts = {
+        kconfig_path: kconfig,
+        makefile_path: makefile,
+        dtsi_path: dtsi,
+    }
+    copied_paths: list[Path] = []
 
-    kconfig_path.write_text(new_kconfig)
-    makefile_path.write_text(new_makefile)
-    dtsi_path.write_text(new_dtsi)
+    try:
+        for rel, src in sources.items():
+            dst = kernel / rel
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, dst)
+            copied_paths.append(dst)
 
-    subprocess.run(
-        ["git", "-C", str(kernel), "diff", "--check"],
-        check=True,
-    )
+        kconfig_path.write_text(new_kconfig)
+        makefile_path.write_text(new_makefile)
+        dtsi_path.write_text(new_dtsi)
+
+        subprocess.run(
+            ["git", "-C", str(kernel), "diff", "--check"],
+            check=True,
+        )
+    except Exception:
+        for dst in copied_paths:
+            dst.unlink(missing_ok=True)
+        for path, original in original_texts.items():
+            path.write_text(original)
+        raise
 
     print("PM660L LCDB draft sources integrated.")
     print(f"Kernel base: {head}")
