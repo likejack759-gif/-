@@ -134,11 +134,25 @@ def main() -> int:
         makefile_path.write_text(new_makefile)
         dtsi_path.write_text(new_dtsi)
 
+        new_relpaths = list(sources)
+        subprocess.run(
+            ["git", "-C", str(kernel), "add", "-N", "--", *new_relpaths],
+            check=True,
+        )
         subprocess.run(
             ["git", "-C", str(kernel), "diff", "--check"],
             check=True,
         )
+        # Remove intent-to-add entries; leave all new files untracked.
+        subprocess.run(
+            ["git", "-C", str(kernel), "reset", "--", *new_relpaths],
+            check=True,
+        )
     except Exception:
+        subprocess.run(
+            ["git", "-C", str(kernel), "reset", "--", *sources.keys()],
+            check=False,
+        )
         for dst in copied_paths:
             dst.unlink(missing_ok=True)
         for path, original in original_texts.items():
