@@ -567,6 +567,10 @@ static irqreturn_t pm660l_lcdb_sc_irq_thread(int irq, void *data)
 	if (lcdb->fault_latched)
 		goto handled;
 
+	/* Ignore a stale SC indication after the block was already shut down. */
+	if (!lcdb->request_mask && !lcdb->module_enabled)
+		goto handled;
+
 	/* A bootloader-enabled block can fault before any consumer requests it. */
 	if (!lcdb->request_mask) {
 		ret = pm660l_lcdb_module_disable(lcdb);
