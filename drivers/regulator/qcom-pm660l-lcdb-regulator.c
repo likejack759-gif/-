@@ -22,6 +22,7 @@
 
 #include "qcom-pm660l-lcdb-internal.h"
 
+#define PM660L_LCDB_TOUCH_WAKE_BIT BIT(3)
 #define PM660L_LCDB_IRQ_NAME		"sc-irq"
 #define PM660L_LCDB_STATUS_POLL_US	1000
 #define PM660L_LCDB_STATUS_POLLS	20
@@ -490,26 +491,57 @@ static const struct regulator_ops pm660l_lcdb_ops = {
 static irqreturn_t pm660l_lcdb_sc_irq_thread(int irq, void *data)
 {
 	struct pm660l_lcdb *lcdb = data;
-	unsigned int status;
+	unsigned int status, misc, output_status;
 	s64 elapsed;
 	int ret;
 
+	/* First sample the interrupt and wake mode without holding the lock
+	 * across the panel blanking delay.
+	 */
 	mutex_lock(&lcdb->lock);
-	if (lcdb->fault_latched)
-		goto handled;
-
 	ret = regmap_read(lcdb->regmap,
 			  lcdb->base + PM660L_LCDB_INT_RT_REG, &status);
-	if (ret)
-		goto fault;
-	if (!(status & PM660L_LCDB_SC_ERROR_BIT))
+	if (!ret && (status & PM660L_LCDB_SC_ERROR_BIT))
+		ret = regmap_read(lcdb->regmap,
+				  lcdb->base + PM660L_LCDB_MISC_CTL_REG, &misc);
+	mutex_unlock(&lcdb->lock);
+	if (ret || !(status & PM660L_LCDB_SC_ERROR_BIT))
+		return IRQ_HANDLED;
+
+	if (misc & PM660L_LCDB_TOUCH_WAKE_BIT) {
+		/* Touch-wake mode needs the short display-blanking interval. */
+		usleep_range(300, 310);
+		mutex_lock(&lcdb->lock);
+		ret = pm660l_lcdb_read_output_status(lcdb, &output_status);
+		mutex_unlock(&lcdb->lock);
+		if (ret)
+			goto fault_unlocked;
+
+		/* The downstream handler treats either missing output-good bit
+		 * as a confirmed short-circuit event in touch-wake mode.
+		 */
+		if (output_status == PM660L_LCDB_REQ_MASK)
+			return IRQ_HANDLED;
+	} else {
+		/* Outside touch-wake mode, confirm the latched event after blanking. */
+		usleep_range(2000, 2100);
+		mutex_lock(&lcdb->lock);
+		ret = regmap_read(lcdb->regmap,
+				  lcdb->base + PM660L_LCDB_INT_RT_REG, &status);
+		mutex_unlock(&lcdb->lock);
+		if (ret || !(status & PM660L_LCDB_SC_ERROR_BIT))
+			return IRQ_HANDLED;
+	}
+
+	mutex_lock(&lcdb->lock);
+	if (lcdb->fault_latched)
 		goto handled;
 
 	/* A bootloader-enabled block can fault before any consumer requests it. */
 	if (!lcdb->request_mask) {
 		ret = pm660l_lcdb_module_disable(lcdb);
 		if (ret)
-			goto fault;
+			goto fault_locked;
 		lcdb->fault_latched = true;
 		dev_err(lcdb->dev,
 			"short circuit with no consumer request; LCDB shut down\n");
@@ -521,29 +553,41 @@ static irqreturn_t pm660l_lcdb_sc_irq_thread(int irq, void *data)
 		lcdb->sc_count = 0;
 		lcdb->sc_window_start = ktime_get();
 	}
-	if (lcdb->sc_count >= PM660L_LCDB_SC_RETRY_MAX)
-		goto fault;
+	if (lcdb->sc_count >= PM660L_LCDB_SC_RETRY_MAX) {
+		ret = -ELOOP;
+		goto fault_locked;
+	}
 	lcdb->sc_count++;
 
 	ret = pm660l_lcdb_module_disable(lcdb);
 	if (ret)
-		goto fault;
+		goto fault_locked;
 
+	/* Match the PM660L discharge interval before restarting the converter. */
 	usleep_range(10000, 10100);
 	ret = pm660l_lcdb_module_enable(lcdb, false);
 	if (ret)
-		goto fault;
+		goto fault_locked;
 
 	dev_warn(lcdb->dev, "LCDB short-circuit event recovered (%u/%u)\n",
 		 lcdb->sc_count, PM660L_LCDB_SC_RETRY_MAX);
 	goto handled;
 
-fault:
+fault_locked:
 	lcdb->fault_latched = true;
 	dev_err(lcdb->dev,
 		"LCDB short-circuit recovery failed; outputs locked off (error %d)\n",
 		ret);
 handled:
+	mutex_unlock(&lcdb->lock);
+	return IRQ_HANDLED;
+
+fault_unlocked:
+	mutex_lock(&lcdb->lock);
+	lcdb->fault_latched = true;
+	dev_err(lcdb->dev,
+		"LCDB short-circuit status read failed; outputs locked (error %d)\n",
+		ret);
 	mutex_unlock(&lcdb->lock);
 	return IRQ_HANDLED;
 }
