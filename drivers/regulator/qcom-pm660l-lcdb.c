@@ -11,6 +11,7 @@
 #include <linux/err.h>
 #include <linux/interrupt.h>
 #include <linux/ktime.h>
+#include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/of.h>
 #include <linux/platform_device.h>
@@ -85,7 +86,7 @@ static int pm660l_lcdb_update(struct pm660l_lcdb *lcdb, unsigned int reg,
 static int pm660l_lcdb_read_output_status(struct pm660l_lcdb *lcdb,
 					  unsigned int *status)
 {
-	unsigned int sts[2] = { 0, 0 };
+	u8 sts[2] = { 0, 0 };
 	u8 clear[2] = { 0, 0 };
 	int ret;
 
@@ -132,7 +133,7 @@ static int pm660l_lcdb_wait_output(struct pm660l_lcdb *lcdb,
 		if (ret)
 			return ret;
 
-		if (status & rail_bit) {
+		if ((status & rail_bit) == rail_bit) {
 			lcdb->output_good_mask = status;
 			return 0;
 		}
@@ -370,21 +371,10 @@ static int pm660l_lcdb_set_voltage_sel(struct regulator_dev *rdev,
 		goto out;
 	}
 
-	ret = pm660l_lcdb_read(rail->lcdb, rail->voltage_reg, &boost_value);
-	if (ret)
-		goto out;
-	if (rail->request_bit == PM660L_LCDB_REQ_LDO)
-		old_ldo_sel = boost_value & GENMASK(4, 0);
-	else
-		old_ncp_sel = boost_value & GENMASK(4, 0);
-
 	ret = pm660l_lcdb_read(lcdb, PM660L_LCDB_LDO_VOLT_REG, &boost_value);
 	if (ret)
 		goto out;
-	if (rail->request_bit == PM660L_LCDB_REQ_LDO)
-		old_ldo_sel = boost_value & GENMASK(4, 0);
-	else
-		old_ldo_sel = old_ldo_sel;
+	old_ldo_sel = boost_value & GENMASK(4, 0);
 
 	ret = pm660l_lcdb_read(lcdb, PM660L_LCDB_NCP_VOLT_REG, &boost_value);
 	if (ret)
@@ -461,7 +451,7 @@ out:
 	return ret;
 }
 
-static int pm660l_lcdb_map_voltage(struct regulator_dev *rdev,
+static int pm660l_lcdb_regulator_map_voltage(struct regulator_dev *rdev,
 				   int min_uv, int max_uv)
 {
 	unsigned int selector;
@@ -474,7 +464,7 @@ static int pm660l_lcdb_map_voltage(struct regulator_dev *rdev,
 	return selector;
 }
 
-static int pm660l_lcdb_list_voltage(struct regulator_dev *rdev,
+static int pm660l_lcdb_regulator_list_voltage(struct regulator_dev *rdev,
 				   unsigned int selector)
 {
 	return pm660l_lcdb_list_voltage(selector);
@@ -486,11 +476,11 @@ static const struct regulator_ops pm660l_lcdb_ops = {
 	.is_enabled = pm660l_lcdb_is_enabled,
 	.get_voltage_sel = pm660l_lcdb_get_voltage_sel,
 	.set_voltage_sel = pm660l_lcdb_set_voltage_sel,
-	.map_voltage = pm660l_lcdb_map_voltage,
-	.list_voltage = pm660l_lcdb_list_voltage,
+	.map_voltage = pm660l_lcdb_regulator_map_voltage,
+	.list_voltage = pm660l_lcdb_regulator_list_voltage,
 };
 
-static int pm660l_lcdb_sc_irq_thread(int irq, void *data)
+static irqreturn_t pm660l_lcdb_sc_irq_thread(int irq, void *data)
 {
 	struct pm660l_lcdb *lcdb = data;
 	unsigned int status;
@@ -654,7 +644,7 @@ static int pm660l_lcdb_probe(struct platform_device *pdev)
 	 * Preserve bootloader-enabled outputs as active until their consumers
 	 * release them.  Do not infer the shared module state from VREG_OK.
 	 */
-	lcdb->request_mask = status;
+	lcdb->request_mask = lcdb->module_enabled ? status : 0;
 
 	ret = pm660l_lcdb_read(lcdb, PM660L_LCDB_BST_VOLT_REG, &value);
 	if (ret)
@@ -682,7 +672,8 @@ static int pm660l_lcdb_probe(struct platform_device *pdev)
 	if (ret)
 		goto err_put_nodes;
 
-	if (lcdb->sc_irq >= 0) {
+	if (lcdb->sc_irq >= 0 &&
+	    !pm660l_lcdb_needs_ncp_scp_wa(lcdb->pmic_rev4)) {
 		ret = devm_request_threaded_irq(dev, lcdb->sc_irq, NULL,
 						pm660l_lcdb_sc_irq_thread,
 						IRQF_ONESHOT,
