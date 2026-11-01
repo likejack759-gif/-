@@ -284,3 +284,35 @@ through GitHub's repository API/raw-file access.
   inspecting a local excerpt without its full parent scope.
 - IRQ routing is no longer a blocker. The binding should require the named
   sc-irq for PMIC revisions using IRQ-based SC recovery.
+
+
+## PM660L LCDB driver and binding implementation checkpoint (2026-11-01)
+
+- Added the first driver source:
+  drivers/regulator/qcom-pm660l-lcdb-regulator.c.
+- Added a PM660L-specific binding draft:
+  Documentation/devicetree/bindings/regulator/qcom,pm660l-lcdb-regulator.yaml.
+- Added Kconfig/Makefile fragments under patches/pm660l/.
+- Added a PM660L LCDB node fragment for the USID 3 SPMI child at
+  patches/pm660l/pm660l-usid3-node.fragment. It is not yet applied to the
+  complete target pm660l.dtsi and remains disabled in the fragment.
+- Rechecked the complete vendor pm660l.dtsi parent scope: LCDB is under
+  qcom,pm660l@3 (USID 3); the SC interrupt specifier also names SID 3.
+  The earlier suspected SID mismatch is resolved as a false alarm.
+- Driver behavior includes dual regulator registration, shared module
+  request ownership, independent output-good status, coordinated boost/
+  output voltage sequencing, rollback attempts, old-revision SCP workaround,
+  touch-wake/normal SC event confirmation, bounded recovery, and shutdown
+  after failed recovery.
+- PMIC revisions >= v2.0 now require the named sc-irq. Older revisions use
+  the PM660L NCP SCP workaround and do not request the IRQ.
+- MODULE_RDY is set only when the LCDB module is initially disabled, to
+  preserve an already-enabled bootloader handoff.
+- The startup status poll allows up to 100 ms to cover the downstream
+  soft-start/debounce envelope; no hardware timing validation has occurred.
+- No full v7.3.1 object build, modpost, checkpatch, sparse,
+  dt_binding_check, dtbs_check, KUnit/regmap fault-injection or hardware
+  test has been run. Existing host helper tests do not compile or execute
+  the driver source.
+- The Platina DTS does not yet enable the LCDB node or connect panel/touch
+  consumers. Do not enable those supplies until full-tree validation.
