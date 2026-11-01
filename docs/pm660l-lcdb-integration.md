@@ -96,3 +96,27 @@ semantics.
 
 This is an implementation checkpoint, not a production-ready or
 hardware-validated driver.
+
+
+## Preparing the exact upstream tree
+
+A guarded integration script is available at
+scripts/prepare-pm660l-lcdb-kernel-tree.py. It requires a clean Git checkout
+at the exact v7.3.1 commit above. It copies the driver, internal header and
+binding, inserts the Kconfig/Makefile entries, and inserts the disabled LCDB
+node under the existing PM660L USID 3 node. It refuses to overwrite files,
+does not enable the node in Platina DTS, does not commit, and rolls back its
+file edits if the final diff check fails.
+
+Example from WSL/Linux:
+
+```sh
+mkdir -p ~/src
+git clone --depth 1 --branch v7.3.1 https://github.com/gregkh/linux.git ~/src/linux-v7.3.1
+git clone --branch dev/platina-device-tree-v1 https://github.com/likejack759-gif/-.git ~/src/platina-kernel-port
+python3 ~/src/platina-kernel-port/scripts/prepare-pm660l-lcdb-kernel-tree.py ~/src/linux-v7.3.1
+```
+
+After integration, inspect `git diff` and run checkpatch, dt_binding_check
+and the targeted object build. The script itself performs no build or
+format-patch generation.
