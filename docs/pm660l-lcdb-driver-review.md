@@ -105,3 +105,13 @@ qcom,pwrdn-delay-ms or qcom,ttw-enable properties. The port replaces the
 vendor qcom,pmic-revid phandle with qcom_pmic_get() and uses the child node
 names directly. The initially omitted optional controls therefore do not
 represent active properties in the Platina vendor node.
+
+
+## Voltage rollback failure policy
+
+If a boost/output register transaction cannot be rolled back, the driver
+latches the provider fault and immediately attempts a bounded two-pass
+module shutdown. It does not leave an ambiguous voltage state powered
+merely because the consumer's set_voltage callback is returning an error.
+The request mask is retained until normal regulator disable callbacks
+release their ownership; new enable/voltage requests remain blocked.
