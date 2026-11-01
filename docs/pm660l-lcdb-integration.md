@@ -9,74 +9,88 @@ Add near the Qualcomm regulator entries in drivers/regulator/Kconfig:
 
 ```Kconfig
 config REGULATOR_QCOM_PM660L_LCDB
-	tristate "Qualcomm PM660L LCDB regulator driver"
+	tristate "Qualcomm PM660L LCDB regulator"
 	depends on MFD_SPMI_PMIC
 	depends on OF
 	help
-	  Say y here to enable the PM660L LCDB LDO and NCP regulators.
-	  The two outputs share a boost converter and module-enable bit.
-
-	  Say M here if you want to build the driver as a module. The module
-	  will be called "qcom-pm660l-lcdb".
+	  This driver supports the PM660L LCDB LDO and NCP outputs. The
+	  outputs share a boost converter and module-enable control.
 ```
 
-MFD_SPMI_PMIC is the target tree's Qualcomm SPMI PMIC parent driver. It
-provides qcom_pmic_get() and the parent regmap used by this driver.
+MFD_SPMI_PMIC provides qcom_pmic_get() and the parent SPMI regmap.
 
 ## Makefile fragment
 
 Add to drivers/regulator/Makefile:
 
 ```make
-obj-$(CONFIG_REGULATOR_QCOM_PM660L_LCDB) += qcom-pm660l-lcdb.o
+obj-$(CONFIG_REGULATOR_QCOM_PM660L_LCDB) += qcom-pm660l-lcdb-regulator.o
 ```
 
-## Driver node shape expected by the current implementation
+The fragments are also stored under patches/pm660l/.
 
-The current driver expects the LCDB platform node to provide:
-- compatible = "qcom,pm660l-lcdb";
-- reg = <0xec00 0x100> (the driver currently reads the first reg cell);
-- child nodes named "ldo" and "ncp";
-- optional interrupt-names = "sc-irq" and a corresponding interrupt.
+## Device-tree node shape
 
-Each rail child is passed to the regulator core as its OF node, so standard
+The binding is drafted at:
+Documentation/devicetree/bindings/regulator/qcom,pm660l-lcdb-regulator.yaml
+
+The node must be a child of the PM660L SPMI device at USID 3:
+
+- compatible = "qcom,pm660l-lcdb-regulator";
+- reg = <0xec00> (one address cell in the target PM660L DTSI);
+- interrupts = <0x3 0xec 0x1 IRQ_TYPE_EDGE_RISING>;
+- interrupt-names = "sc-irq";
+- child nodes named "ldo" and "ncp".
+
+The full vendor DTS was checked with its parent-node boundaries. The LCDB
+node is nested below qcom,pm660l@3, so its SID 3 interrupt specifier matches
+the parent SPMI device. The earlier apparent SID 2/3 mismatch was a false
+alarm caused by reading the local excerpt without its parent scope.
+
+The driver requires sc-irq for PMIC revisions that use IRQ-based short-
+circuit recovery (PMIC REV4 >= 0x02). Older revisions use the PM660L NCP
+SCP workaround and do not request this IRQ.
+
+Each rail child is passed to the regulator core as its OF node. Standard
 regulator constraints such as regulator-name, regulator-min-microvolt,
-regulator-max-microvolt, regulator-boot-on and regulator-always-on should
-be used. The binding must define and validate this shape before a DTS node
-is added.
+regulator-max-microvolt, regulator-boot-on and regulator-always-on may be
+provided, subject to validation against the regulator core's boot handoff
+semantics.
 
-## Explicit integration blockers
+## Integration status
 
-1. The vendor DTS nests the LCDB block under PM660L USID 2 but encodes the
-   SC interrupt specifier with SID 3. The target binding defines the first
-   interrupt cell as the SPMI slave ID. Do not add an interrupt specifier
-   until the runtime/arbiter mapping is verified.
-2. The driver currently treats the SC interrupt as optional. Without it,
-   regulator enable/voltage control works but automatic SC recovery is not
-   available. Do not enable the board node for production until the correct
-   interrupt route is established.
-3. The current driver is not yet compiled against the complete target tree.
-   API review has been done against v7.3.1 headers, but build, sparse,
-   dt_binding_check, dtbs_check and KUnit/regmap fault injection remain.
-4. The driver intentionally does not implement touch-wake sysfs/class
-   controls, current-limit controls, soft-start controls, or vendor debug
-   interfaces in this first pass. They must be added only after their
-   register semantics and ABI are independently reviewed.
+1. The PM660L-specific binding draft exists but has not passed
+   dt_binding_check.
+2. A PM660L USID 3 node fragment exists at
+   patches/pm660l/pm660l-usid3-node.fragment. It is not yet applied to the
+   complete target pm660l.dtsi.
+3. The Platina board DTS does not yet enable the LCDB node or add panel/
+   touch regulator consumers. Keep those consumers disabled until the
+   driver passes full-tree validation.
+4. The driver has not been compiled against the complete target tree.
+   Sparse, dt_binding_check, dtbs_check and KUnit/regmap fault injection
+   remain outstanding.
+5. The first implementation omits current-limit controls, pulse-skip
+   thresholds, soft-start configuration, force-pulldown/touch-wake policy,
+   vendor sysfs/class controls and regulator fault notifier propagation.
+   These must be added only after their register semantics and ABI are
+   independently reviewed.
 
-## First-pass behavior and limitations
+## First-pass behavior
 
 - Registers two regulator devices: LDO and NCP.
 - Models shared module enable with independent Linux consumer request bits.
-- Reports is_enabled from the respective physical VREG_OK status bit.
+- Reports is_enabled from each output's physical VREG_OK status.
 - Reads the two status bytes using the vendor-required STS3/STS4 pre-write.
-- Uses PM660L revision-4 < 0x02 NCP SCP workaround.
-- Preserves the vendor behavior of not requesting the SC IRQ on revisions
-  requiring that workaround.
+- Uses the PM660L REV4 < 0x02 NCP SCP workaround.
+- For PMIC revisions using IRQ recovery, confirms SC events using the
+  vendor touch-wake 300 us or normal 2 ms blanking path.
+- Bounds repeated recovery attempts and latches a fault after persistent
+  failures.
 - Coordinates output and boost voltage writes: raise boost first; lower
-  boost only after the output has been lowered.
-- On an output-write failure after raising boost, attempts to restore the
-  old boost selector. A failed rollback marks the hardware state unknown.
-- A failed module shutdown during SC handling prevents automatic restart.
+  boost only after lowering the output.
+- Attempts to roll back uncertain register transactions; if rollback fails,
+  the provider is fault-latched and further changes are refused.
 - Does not write any modem, persist, boot, dtbo or other storage partition.
 
 This is an implementation checkpoint, not a production-ready or
