@@ -41,17 +41,19 @@ Probe must:
 1. acquire the parent SPMI regmap and PMIC revision through the upstream API;
 2. validate PM660L subtype and revision;
 3. parse the SPMI base and interrupt resources;
-4. read module-enable, LDO VREG_OK and NCP VREG_OK independently;
-5. read both output voltage selectors and boost state;
-6. initialize requested_mask to no consumer requests (do not infer requests
+4. read the shared module-enable state;
+5. initialize requested_mask to no consumer requests (do not infer requests
    from bootloader hardware state);
-7. preserve a bootloader-enabled module without an unnecessary power cycle;
-8. register both regulator descriptors and the threaded fault IRQ;
-9. unwind cleanly on every failure.
+6. preserve an already-enabled bootloader state and do not modify MODULE_RDY
+   while the module is active;
+7. when the module is disabled, set MODULE_RDY only if it is not already set;
+8. avoid touching the STS3/STS4 status latch during probe; sample independent
+   LDO/NCP VREG_OK only when a consumer asks for status or enable.
 
-The interaction between bootloader-on outputs, regulator constraints
-(boot_on/always_on), and later consumer enable/disable calls must be tested
-against the v7.3.1 regulator core before finalizing exact handoff behavior.
+The PM660L enable workaround performs the vendor-required short module
+on/off cycle on every PM660L revision. For REV4 < 0x02 it additionally waits
+for boost discharge and toggles DIS_SCP with the vendor delays. For REV4 >=
+0x02, the named SC IRQ is required and used for fault recovery.
 
 ## 4. Shared module enable/disable
 
