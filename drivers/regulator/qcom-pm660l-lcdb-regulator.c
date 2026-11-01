@@ -39,7 +39,6 @@ struct pm660l_lcdb_rail {
 	struct regulator_dev *rdev;
 	unsigned int request_bit;
 	unsigned int voltage_reg;
-	const char *name;
 };
 
 struct pm660l_lcdb {
