@@ -257,12 +257,12 @@ static int pm660l_lcdb_force_shutdown(struct pm660l_lcdb *lcdb)
 {
 	int ret;
 
-	ret = pm660l_lcdb_force_shutdown(lcdb);
+	ret = pm660l_lcdb_module_disable(lcdb);
 	if (!ret)
 		return 0;
 
 	usleep_range(1000, 1100);
-	ret = pm660l_lcdb_force_shutdown(lcdb);
+	ret = pm660l_lcdb_module_disable(lcdb);
 	if (ret)
 		lcdb->fault_latched = true;
 
