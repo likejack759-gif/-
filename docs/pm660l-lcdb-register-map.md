@@ -165,3 +165,11 @@ authoritative hardware documentation.
 
 The LCDB register base and regmap parent relationship are separate from the
 interrupt's SID and must be validated independently.
+
+
+The selector mapper deliberately accepts caller intervals that extend beyond
+the regulator's physical range. It searches the supported selector table and
+returns the lowest listed voltage satisfying both bounds. For example,
+[3.9 V, 4.1 V] maps to 4.0 V, while [6.000001 V, 6.1 V] has no valid selector.
+This matches the regulator-core interval contract better than rejecting an
+otherwise satisfiable interval merely because max_uV exceeds 6.0 V.
