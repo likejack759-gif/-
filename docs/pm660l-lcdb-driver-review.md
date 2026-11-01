@@ -46,9 +46,10 @@ current-limit code has known encoding defects and is not safe to port as-is.
 
 ## Outstanding blockers before upstream-quality completion
 
-1. **Binding**: no YAML binding exists yet for qcom,pm660l-lcdb-regulator.
-   Define the PM660L-specific compatible, required SC interrupt and two
-   regulator child nodes.
+1. **Binding validation**: a YAML draft now exists at
+   Documentation/devicetree/bindings/regulator/qcom,pm660l-lcdb-regulator.yaml.
+   It still needs dt_binding_check, schema review and an accepted-example
+   comparison against current regulator binding conventions.
 2. **Kernel integration**: Kconfig/Makefile fragments are prepared but have
    not been applied to a complete Linux v7.3.1 source checkout.
 3. **Compile**: no complete-tree object build or modpost has been run.
