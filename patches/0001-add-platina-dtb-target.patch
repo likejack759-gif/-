@@ -1,27 +1,10 @@
-From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
-From: Platina Kernel Port <noreply@example.invalid>
-Date: Sun, 1 Nov 2026 00:00:00 +0000
-Subject: [PATCH] arm64: dts: qcom: Add Xiaomi Mi 8 Lite (platina) DTB target
-
-Add the new board DTB to the Qualcomm device-tree build list.
-
-This patch is intended for the upstream Linux v7.3.1 source tree. Copy
-sdm660-xiaomi-platina.dts from this port into
-arch/arm64/boot/dts/qcom/ before applying it.
-
----
- arch/arm64/boot/dts/qcom/Makefile | 1 +
- 1 file changed, 1 insertion(+)
-
 diff --git a/arch/arm64/boot/dts/qcom/Makefile b/arch/arm64/boot/dts/qcom/Makefile
-index 000000000000..000000000000 100644
 --- a/arch/arm64/boot/dts/qcom/Makefile
 +++ b/arch/arm64/boot/dts/qcom/Makefile
-@@ -311,5 +311,6 @@ dtb-$(CONFIG_ARCH_QCOM)	+= sdm636-sony-xperia-ganges-mermaid.dtb
+@@ -311,5 +311,6 @@
+ dtb-$(CONFIG_ARCH_QCOM)	+= sdm636-sony-xperia-ganges-mermaid.dtb
  dtb-$(CONFIG_ARCH_QCOM)	+= sdm660-xiaomi-lavender.dtb
 +dtb-$(CONFIG_ARCH_QCOM)	+= sdm660-xiaomi-platina.dtb
  dtb-$(CONFIG_ARCH_QCOM)	+= sdm670-google-bonito-tianma.dtb
  dtb-$(CONFIG_ARCH_QCOM)	+= sdm670-google-sargo.dtb
  dtb-$(CONFIG_ARCH_QCOM)	+= sdm845-db845c.dtb
---
-2.43.0
