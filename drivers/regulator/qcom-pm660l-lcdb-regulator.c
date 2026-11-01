@@ -225,12 +225,12 @@ static int pm660l_lcdb_module_enable(struct pm660l_lcdb *lcdb,
 
 static int pm660l_lcdb_module_disable(struct pm660l_lcdb *lcdb)
 {
+	unsigned int val;
 	int ret;
 
 	ret = regmap_write(lcdb->regmap,
 			    lcdb->base + PM660L_LCDB_ENABLE_REG, 0);
 	if (ret) {
-		unsigned int val;
 		int read_ret;
 
 		read_ret = regmap_read(lcdb->regmap,
@@ -244,6 +244,17 @@ static int pm660l_lcdb_module_disable(struct pm660l_lcdb *lcdb)
 			lcdb->module_enabled = true;
 		}
 		return ret;
+	}
+
+	ret = regmap_read(lcdb->regmap,
+			  lcdb->base + PM660L_LCDB_ENABLE_REG, &val);
+	if (ret) {
+		lcdb->fault_latched = true;
+		return ret;
+	}
+	if (val & PM660L_LCDB_MODULE_EN_BIT) {
+		lcdb->module_enabled = true;
+		return -EIO;
 	}
 
 	lcdb->module_enabled = false;
