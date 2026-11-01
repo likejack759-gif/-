@@ -1,10 +1,15 @@
-diff --git a/arch/arm64/boot/dts/qcom/Makefile b/arch/arm64/boot/dts/qcom/Makefile
---- a/arch/arm64/boot/dts/qcom/Makefile
-+++ b/arch/arm64/boot/dts/qcom/Makefile
-@@ -311,5 +311,6 @@
- dtb-$(CONFIG_ARCH_QCOM)	+= sdm636-sony-xperia-ganges-mermaid.dtb
- dtb-$(CONFIG_ARCH_QCOM)	+= sdm660-xiaomi-lavender.dtb
-+dtb-$(CONFIG_ARCH_QCOM)	+= sdm660-xiaomi-platina.dtb
- dtb-$(CONFIG_ARCH_QCOM)	+= sdm670-google-bonito-tianma.dtb
- dtb-$(CONFIG_ARCH_QCOM)	+= sdm670-google-sargo.dtb
- dtb-$(CONFIG_ARCH_QCOM)	+= sdm845-db845c.dtb
+# Deprecated standalone Makefile patch
+
+This file is retained only as historical review context. Do not apply it as a
+standalone patch.
+
+The complete initial series is now split into dependency-ordered patches:
+
+1. `0001-dt-bindings-arm-qcom-add-xiaomi-platina.patch`
+2. `0002-arm64-dts-qcom-add-xiaomi-platina.patch`
+3. `0003-arm64-dts-qcom-add-platina-dtb-target.patch`
+
+The DTS source is added in patch 2 before patch 3 registers its DTB target.
+The binding patch adds `xiaomi,platina` to the existing SDM660 compatible
+list. The series has been stored in the repository, but has not yet been
+applied to or built against a complete Linux v7.3.1 checkout.
