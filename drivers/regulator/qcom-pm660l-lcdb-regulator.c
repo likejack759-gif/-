@@ -173,7 +173,13 @@ static int pm660l_lcdb_module_enable(struct pm660l_lcdb *lcdb,
 	if (run_revision_wa) {
 		ret = pm660l_lcdb_old_revision_wa(lcdb);
 		if (ret) {
+			int disable_ret = pm660l_lcdb_module_disable(lcdb);
+
 			lcdb->fault_latched = true;
+			if (disable_ret)
+				dev_err(lcdb->dev,
+					"revision workaround failed (%d), shutdown failed (%d)\\n",
+					ret, disable_ret);
 			return ret;
 		}
 	}
@@ -182,8 +188,13 @@ static int pm660l_lcdb_module_enable(struct pm660l_lcdb *lcdb,
 				 lcdb->base + PM660L_LCDB_ENABLE_REG,
 				 PM660L_LCDB_MODULE_EN_BIT,
 				 PM660L_LCDB_MODULE_EN_BIT);
-	if (ret)
+	if (ret) {
+		int disable_ret = pm660l_lcdb_module_disable(lcdb);
+
+		if (disable_ret)
+			lcdb->fault_latched = true;
 		return ret;
+	}
 
 	lcdb->module_enabled = true;
 	ret = pm660l_lcdb_poll_module_ready(lcdb);
@@ -212,8 +223,21 @@ static int pm660l_lcdb_module_disable(struct pm660l_lcdb *lcdb)
 	ret = regmap_update_bits(lcdb->regmap,
 				 lcdb->base + PM660L_LCDB_ENABLE_REG,
 				 PM660L_LCDB_MODULE_EN_BIT, 0);
-	if (ret)
+	if (ret) {
+		unsigned int val;
+		int read_ret;
+
+		read_ret = regmap_read(lcdb->regmap,
+				       lcdb->base + PM660L_LCDB_ENABLE_REG, &val);
+		if (read_ret || !(val & PM660L_LCDB_MODULE_EN_BIT)) {
+			lcdb->module_enabled = false;
+			lcdb->output_good_mask = 0;
+			lcdb->fault_latched = true;
+		} else {
+			lcdb->module_enabled = true;
+		}
 		return ret;
+	}
 
 	lcdb->module_enabled = false;
 	lcdb->output_good_mask = 0;
