@@ -146,3 +146,22 @@ limits.
 
 The host test is a selector fixture test only. It does not prove kernel
 compilation, regmap behavior, regulator-core integration or hardware safety.
+
+
+## Outstanding SPMI interrupt routing discrepancy
+
+The vendor PM660L DTS places the LCDB function node under the PM660L USID 2
+SPMI PMIC node, but encodes its short-circuit interrupt as
+<3 0xec 1 IRQ_TYPE_EDGE_RISING>. The first cell of the Qualcomm SPMI PMIC
+arbiter interrupt specifier is the slave ID. Other vendor functions under
+the same USID 2 node use SID 2 in their interrupt specifiers.
+
+This may be intentional cross-USID interrupt routing, or a downstream DTS
+error. Do not silently rewrite the LCDB interrupt to SID 2 or move the
+function node to USID 3 based only on the register address. The upstream
+PM660L LCDB node and binding must remain blocked until the SID 3 interrupt
+mapping is verified against the PMIC arbiter/runtime device tree or
+authoritative hardware documentation.
+
+The LCDB register base and regmap parent relationship are separate from the
+interrupt's SID and must be validated independently.
