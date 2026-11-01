@@ -209,16 +209,13 @@ static int pm660l_lcdb_module_enable(struct pm660l_lcdb *lcdb)
 	lcdb->module_enabled = true;
 	ret = pm660l_lcdb_poll_module_ready(lcdb);
 	if (ret) {
-		int disable_ret;
+		int disable_ret = pm660l_lcdb_module_disable(lcdb);
 
-		disable_ret = regmap_update_bits(lcdb->regmap,
-						 lcdb->base + PM660L_LCDB_ENABLE_REG,
-						 PM660L_LCDB_MODULE_EN_BIT, 0);
-		if (!disable_ret) {
-			lcdb->module_enabled = false;
-			lcdb->output_good_mask = 0;
-		} else {
+		if (disable_ret) {
 			lcdb->fault_latched = true;
+			dev_err(lcdb->dev,
+				"module startup failed (%d), shutdown failed (%d)\n",
+				ret, disable_ret);
 		}
 		return ret;
 	}
