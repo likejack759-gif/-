@@ -247,3 +247,27 @@ through GitHub's repository API/raw-file access.
   kernel build, boot image, flash, or device test has been performed.
 - Driver status: implementation in progress; not production-ready and not
   safe to enable on the board until integration and validation blockers close.
+
+
+## PM660L LCDB driver implementation draft (2026-11-01)
+
+- Added drivers/regulator/qcom-pm660l-lcdb-regulator.c on the development
+  branch. This is an implementation draft, not yet a complete upstream
+  patch series.
+- Implemented two regulator instances, PM660L subtype/revision detection,
+  shared module ownership, independent output-good status, piecewise
+  output selector mapping, shared boost coordination, conservative write
+  rollback, old-revision NCP SCP workaround, and bounded SC recovery logic.
+- The SC handler preserves the vendor touch-wake 300 us blanking check and
+  normal 2 ms delayed SC recheck. It shuts down on status-read errors and
+  does not restart after a failed module shutdown.
+- Added Kconfig/Makefile integration fragments under patches/pm660l/.
+  They are not yet applied to a full target kernel source tree.
+- Added docs/pm660l-lcdb-driver-review.md documenting implemented scope,
+  excluded vendor features, and remaining blockers.
+- The unresolved vendor interrupt SID (LCDB child under USID 2 but IRQ
+  specifier SID 3) remains a hard blocker for final DTS/binding integration.
+- No full kernel compile, modpost, checkpatch, dt_binding_check, regmap
+  fault-injection test or device hardware test has been run.
+- Existing host helper tests remain the only executed tests; they do not
+  exercise the driver source or its state machine.
