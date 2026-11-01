@@ -323,3 +323,21 @@ through GitHub's repository API/raw-file access.
   MID-discharge delay and DIS_SCP toggle are conditional on REV4 < 0x02.
   The driver now follows that distinction; the common pulse is not limited
   to pre-v2.0 devices.
+
+
+- Revalidated the committed selector/request-state helper logic using a
+  local mirrored C fixture: gcc -std=c11 -Wall -Wextra -Werror -O2;
+  compile exit 0, test exit 0, output "PM660L LCDB helper tests: PASS".
+  This is not a build of the full committed repository checkout.
+- Parsed the PM660L LCDB YAML binding draft with PyYAML successfully.
+  This confirms YAML syntax only; dt-doc-validate/dt_binding_check have
+  not been run.
+- Re-reviewed the current driver source for duplicate function definitions,
+  malformed escaped log strings and lines over 100 columns. No such issues
+  were found by the lightweight source scan; this is not checkpatch or
+  compiler validation.
+- Corrected PM660L enable workaround behavior against the full vendor source:
+  the module on/off pulse is performed on every PM660L revision; only the
+  discharge delay and DIS_SCP toggle are conditional on REV4 < 0x02.
+- Added a two-attempt forced-shutdown helper for uncertain SPMI shutdown
+  writes. The final request mask is committed only after shutdown succeeds.
