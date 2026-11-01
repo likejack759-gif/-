@@ -167,3 +167,22 @@ The driver can use the USID 3 parent regmap for LCDB register access and
 platform_get_irq_byname("sc-irq") for the short-circuit interrupt. The
 qcom_pmic_get() API resolves PMIC revision information for a child under
 the second USID through the PMIC's base-USID relationship.
+
+
+## Module-enable write semantics
+
+The vendor PM660L enable workaround uses full-byte writes to
+ENABLE_CTL1 (offset 0x46): write 0x80 to pulse MODULE_EN, then write 0x00
+to shut the module back down. This pulse is performed for every PM660L
+revision. The 10 ms boost-MID discharge delay and DIS_SCP toggle are added
+only when PMIC REV4 < 0x02.
+
+The upstream driver therefore uses regmap_write() for ENABLE_CTL1 rather
+than regmap_update_bits(); this preserves the vendor's full-byte write
+semantics, including clearing the other control bit in that register.
+MODULE_RDY (offset 0x45) remains a separate masked write and is set only
+when the module is initially disabled.
+
+The vendor LCDB node does not set qcom,voltage-step-ramp,
+qcom,pwrdn-delay-ms or qcom,ttw-enable. Those optional downstream features
+are not enabled by the Platina port's initial binding/node fragment.
