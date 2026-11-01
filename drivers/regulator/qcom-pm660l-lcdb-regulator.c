@@ -609,6 +609,7 @@ static irqreturn_t pm660l_lcdb_sc_irq_thread(int irq, void *data)
 		goto fault_locked;
 	}
 	lcdb->sc_count++;
+	lcdb->sc_window_start = ktime_get();
 
 	ret = pm660l_lcdb_module_disable(lcdb);
 	if (ret)
