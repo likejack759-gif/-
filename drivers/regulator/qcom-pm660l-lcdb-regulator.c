@@ -603,7 +603,23 @@ static irqreturn_t pm660l_lcdb_sc_irq_thread(int irq, void *data)
 	if (ret)
 		goto fault_locked;
 
-	dev_warn(lcdb->dev, "LCDB short-circuit event recovered (%u/%u)\n",
+	/* Do not report recovery until both outputs and the SC latch are clear. */
+	ret = pm660l_lcdb_read_output_status(lcdb, &output_status);
+	if (ret)
+		goto fault_locked;
+	if (output_status != PM660L_LCDB_REQ_MASK) {
+		ret = -EIO;
+		goto fault_locked;
+	}
+	ret = regmap_read(lcdb->regmap,
+			  lcdb->base + PM660L_LCDB_INT_RT_REG, &status);
+	if (ret || (status & PM660L_LCDB_SC_ERROR_BIT)) {
+		if (!ret)
+			ret = -EIO;
+		goto fault_locked;
+	}
+
+	dev_warn(lcdb->dev, "LCDB short-circuit event recovered (%u/%u)\\n",
 		 lcdb->sc_count, PM660L_LCDB_SC_RETRY_MAX);
 	goto handled;
 
