@@ -395,14 +395,35 @@ static int pm660l_lcdb_set_voltage_sel(struct regulator_dev *rdev,
 		ret = regmap_update_bits(lcdb->regmap,
 					 lcdb->base + PM660L_LCDB_BST_VOLT_REG,
 					 GENMASK(4, 0), new_bst_sel);
-		if (ret)
+		if (ret) {
+			rollback_ret = regmap_update_bits(lcdb->regmap,
+						  lcdb->base + PM660L_LCDB_BST_VOLT_REG,
+						  GENMASK(4, 0), old_bst_sel);
+			if (rollback_ret) {
+				lcdb->fault_latched = true;
+				dev_err(lcdb->dev,
+					"boost write failed (%d), rollback failed (%d)\\n",
+					ret, rollback_ret);
+			}
 			goto out;
+		}
 	}
 
 	ret = regmap_update_bits(lcdb->regmap,
 				 lcdb->base + rail->voltage_reg,
 				 GENMASK(4, 0), selector);
 	if (ret) {
+		rollback_ret = regmap_update_bits(lcdb->regmap,
+						  lcdb->base + rail->voltage_reg,
+						  GENMASK(4, 0), old_sel);
+		if (rollback_ret) {
+			lcdb->fault_latched = true;
+			dev_err(lcdb->dev,
+				"output write failed (%d), output rollback failed (%d); keeping boost conservative\\n",
+				ret, rollback_ret);
+			goto out;
+		}
+
 		if (boost_raised) {
 			rollback_ret = regmap_update_bits(lcdb->regmap,
 						  lcdb->base + PM660L_LCDB_BST_VOLT_REG,
@@ -410,7 +431,7 @@ static int pm660l_lcdb_set_voltage_sel(struct regulator_dev *rdev,
 			if (rollback_ret) {
 				lcdb->fault_latched = true;
 				dev_err(lcdb->dev,
-					"voltage update failed (%d), boost rollback failed (%d)\n",
+					"output write failed (%d), boost rollback failed (%d)\\n",
 					ret, rollback_ret);
 			}
 		}
@@ -474,7 +495,7 @@ static irqreturn_t pm660l_lcdb_sc_irq_thread(int irq, void *data)
 	int ret;
 
 	mutex_lock(&lcdb->lock);
-	if (lcdb->fault_latched || !lcdb->request_mask)
+	if (lcdb->fault_latched)
 		goto handled;
 
 	ret = regmap_read(lcdb->regmap,
@@ -483,6 +504,17 @@ static irqreturn_t pm660l_lcdb_sc_irq_thread(int irq, void *data)
 		goto fault;
 	if (!(status & PM660L_LCDB_SC_ERROR_BIT))
 		goto handled;
+
+	/* A bootloader-enabled block can fault before any consumer requests it. */
+	if (!lcdb->request_mask) {
+		ret = pm660l_lcdb_module_disable(lcdb);
+		if (ret)
+			goto fault;
+		lcdb->fault_latched = true;
+		dev_err(lcdb->dev,
+			"short circuit with no consumer request; LCDB shut down\\n");
+		goto handled;
+	}
 
 	elapsed = ktime_us_delta(ktime_get(), lcdb->sc_window_start);
 	if (!lcdb->sc_count || elapsed > PM660L_LCDB_SC_RETRY_WINDOW_US) {
