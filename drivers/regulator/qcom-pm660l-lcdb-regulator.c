@@ -114,14 +114,17 @@ static int pm660l_lcdb_poll_module_ready(struct pm660l_lcdb *lcdb)
 	return -ETIMEDOUT;
 }
 
-static int pm660l_lcdb_old_revision_wa(struct pm660l_lcdb *lcdb)
+static int pm660l_lcdb_enable_wa(struct pm660l_lcdb *lcdb)
 {
+	bool needs_scp_wa =
+		pm660l_lcdb_needs_ncp_scp_wa(lcdb->pmic->major);
 	int ret;
 
-	if (!pm660l_lcdb_needs_ncp_scp_wa(lcdb->pmic->major))
-		return 0;
-
-	/* The PM660L v1.x workaround requires a controlled module discharge. */
+	/*
+	 * The vendor PM660L enable workaround performs this short module
+	 * on/off cycle on every revision. Only PMIC revisions below v2.0
+	 * additionally require the NCP SCP-disable toggle.
+	 */
 	ret = regmap_update_bits(lcdb->regmap,
 				 lcdb->base + PM660L_LCDB_ENABLE_REG,
 				 PM660L_LCDB_MODULE_EN_BIT,
@@ -139,6 +142,12 @@ static int pm660l_lcdb_old_revision_wa(struct pm660l_lcdb *lcdb)
 	}
 
 	lcdb->module_enabled = false;
+	lcdb->output_good_mask = 0;
+
+	if (!needs_scp_wa)
+		return 0;
+
+	/* Let the boost MID pin discharge before toggling short protection. */
 	usleep_range(10000, 10100);
 
 	ret = regmap_update_bits(lcdb->regmap,
@@ -166,26 +175,23 @@ static int pm660l_lcdb_old_revision_wa(struct pm660l_lcdb *lcdb)
 
 static int pm660l_lcdb_module_disable(struct pm660l_lcdb *lcdb);
 
-static int pm660l_lcdb_module_enable(struct pm660l_lcdb *lcdb,
-				     bool run_revision_wa)
+static int pm660l_lcdb_module_enable(struct pm660l_lcdb *lcdb)
 {
 	int ret;
 
 	if (lcdb->module_enabled)
 		return pm660l_lcdb_poll_module_ready(lcdb);
 
-	if (run_revision_wa) {
-		ret = pm660l_lcdb_old_revision_wa(lcdb);
-		if (ret) {
-			int disable_ret = pm660l_lcdb_module_disable(lcdb);
+	ret = pm660l_lcdb_enable_wa(lcdb);
+	if (ret) {
+		int disable_ret = pm660l_lcdb_module_disable(lcdb);
 
-			lcdb->fault_latched = true;
-			if (disable_ret)
-				dev_err(lcdb->dev,
-					"revision workaround failed (%d), shutdown failed (%d)\n",
-					ret, disable_ret);
-			return ret;
-		}
+		lcdb->fault_latched = true;
+		if (disable_ret)
+			dev_err(lcdb->dev,
+				"enable workaround failed (%d), shutdown failed (%d)\n",
+				ret, disable_ret);
+		return ret;
 	}
 
 	ret = regmap_update_bits(lcdb->regmap,
@@ -281,7 +287,7 @@ static int pm660l_lcdb_enable(struct regulator_dev *rdev)
 			ret = -EIO;
 			goto out;
 		}
-		ret = pm660l_lcdb_module_enable(lcdb, true);
+		ret = pm660l_lcdb_module_enable(lcdb);
 		if (ret)
 			goto out;
 		started_module = true;
@@ -629,7 +635,7 @@ static irqreturn_t pm660l_lcdb_sc_irq_thread(int irq, void *data)
 
 	/* Match the PM660L discharge interval before restarting the converter. */
 	usleep_range(10000, 10100);
-	ret = pm660l_lcdb_module_enable(lcdb, false);
+	ret = pm660l_lcdb_module_enable(lcdb);
 	if (ret)
 		goto fault_locked;
 
