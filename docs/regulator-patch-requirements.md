@@ -111,3 +111,21 @@ build/schema checks and the available regulator tests are reported.
 - https://docs.kernel.org/power/regulator/
 - https://docs.kernel.org/devicetree/bindings/submitting-patches.html
 - https://docs.kernel.org/process/maintainer-soc.html
+
+
+## Upstream LCDB reference review
+
+An October 2026 upstream LCDB driver and binding series covers PMI632,
+PM6150L and PM8150L, but explicitly excludes PM660L because its boost
+programming differs. The proposed driver is not included in the v7.3.1
+baseline and must be treated as a design reference, not copied as a driver.
+
+The PM660L implementation must additionally:
+- distinguish each output's physical status from the shared module-enable bit;
+- keep consumer request state separate from hardware output-good state;
+- check all shutdown and restart operations during short-circuit recovery;
+- commit cached voltage requests only after successful register programming;
+- define safe handling for partial multi-register updates;
+- avoid importing PM8150L voltage, boost, timing or fault parameters.
+
+Detailed review: docs/upstream-lcdb-series-review.md.
