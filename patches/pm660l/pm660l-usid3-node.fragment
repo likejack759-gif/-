@@ -1,0 +1,24 @@
+/*
+ * Insert as a child of pmic@3 (PM660L USID 3) in pm660l.dtsi.
+ * The LCDB SPMI register block and its SC interrupt both use SID 3.
+ */
+pm660l_lcdb: regulator@ec00 {
+	compatible = "qcom,pm660l-lcdb-regulator";
+	reg = <0xec00>;
+	interrupts = <0x3 0xec 0x1 IRQ_TYPE_EDGE_RISING>;
+	interrupt-names = "sc-irq";
+
+	ldo {
+		regulator-name = "lcdb_ldo";
+		regulator-min-microvolt = <4000000>;
+		regulator-max-microvolt = <6000000>;
+	};
+
+	ncp {
+		regulator-name = "lcdb_ncp";
+		regulator-min-microvolt = <4000000>;
+		regulator-max-microvolt = <6000000>;
+	};
+
+	status = "disabled";
+};
