@@ -83,3 +83,27 @@ then extend the acceptance checklist before implementation.
 7. Add one hardware subsystem at a time, with its driver and power sequence.
 8. Keep the original boot image available and test using a recoverable,
    non-destructive boot method before considering any flash operation.
+
+
+## Upstream patch-format correction (2026-11-01)
+
+- Project-wide acceptance rules are now recorded in
+  `docs/patch-submission-policy.md`.
+- The existing `patches/platina-v1-complete-series.patch` is a unified
+  diff aggregate, **not** a canonical `git format-patch` mail series.
+  It remains useful as a review/apply fixture, but must not be advertised
+  as an upstream-ready email patch series.
+- The existing three changes are logically: SDM660 compatible schema
+  update, Platina board DTS, and Qualcomm DTB Makefile entry. The binding
+  change must remain separate from DTS. DTS should be a separate posting
+  or be last in a combined series, following current Devicetree guidance.
+- A real mail series must be regenerated from actual commits using
+  `git format-patch`, with truthful author metadata, a cover letter,
+  exact base commit, and no fabricated DCO or review trailers.
+- Current local execution environment has not yet supplied a complete
+  Linux v7.3.1 checkout. Therefore no claim is made that canonical
+  `git format-patch` artifacts, full-tree apply, dt_binding_check,
+  dtbs_check or DTB build have been completed.
+- Next: obtain/use an exact v7.3.1 source checkout, reconstruct the
+  logical commits cleanly, run full-tree checks, then export the canonical
+  mail series and checksums.
