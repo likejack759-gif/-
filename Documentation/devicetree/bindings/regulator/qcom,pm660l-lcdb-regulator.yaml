@@ -7,6 +7,8 @@ $schema: http://devicetree.org/meta-schemas/core.yaml#
 title: Qualcomm PM660L LCD Bias (LCDB) Regulators
 
 maintainers:
+  - Bjorn Andersson <andersson@kernel.org>
+  - Konrad Dybcio <konradybcio@kernel.org>
   - Liam Girdwood <lgirdwood@gmail.com>
   - Mark Brown <broonie@kernel.org>
 
