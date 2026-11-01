@@ -603,8 +603,14 @@ static irqreturn_t pm660l_lcdb_sc_irq_thread(int irq, void *data)
 	}
 
 	mutex_lock(&lcdb->lock);
-	if (lcdb->fault_latched)
+	if (lcdb->fault_latched) {
+		ret = pm660l_lcdb_module_disable(lcdb);
+		if (ret)
+			dev_err(lcdb->dev,
+				"LCDB is fault-latched; shutdown retry failed: %d\n",
+				ret);
 		goto handled;
+	}
 
 	/* Ignore a stale SC indication after the block was already shut down. */
 	if (!lcdb->request_mask && !lcdb->module_enabled)
