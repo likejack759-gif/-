@@ -646,7 +646,7 @@ fault_locked:
 
 		lcdb->fault_latched = true;
 		dev_err(lcdb->dev,
-			"LCDB short-circuit recovery failed (error %d), shutdown result %d\\n",
+			"LCDB short-circuit recovery failed (error %d), shutdown result %d\n",
 			ret, shutdown_ret);
 	}
 handled:
@@ -805,7 +805,7 @@ static int pm660l_lcdb_probe(struct platform_device *pdev)
 		irq = platform_get_irq_byname(pdev, PM660L_LCDB_IRQ_NAME);
 		if (irq < 0)
 			return dev_err_probe(&pdev->dev, irq,
-					     "required SC IRQ is unavailable\\n");
+					     "required SC IRQ is unavailable\n");
 
 		ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
 						pm660l_lcdb_sc_irq_thread,
@@ -813,7 +813,7 @@ static int pm660l_lcdb_probe(struct platform_device *pdev)
 						"pm660l-lcdb-sc", lcdb);
 		if (ret)
 			return dev_err_probe(&pdev->dev, ret,
-					     "failed to request SC IRQ\\n");
+					     "failed to request SC IRQ\n");
 	}
 
 	dev_info(&pdev->dev,
