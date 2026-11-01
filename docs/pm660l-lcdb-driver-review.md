@@ -81,3 +81,14 @@ blocker; the binding and board DTS can now encode the verified topology.
 - Do not call this driver complete, compiled or hardware-tested.
 - The current source is an implementation draft on the development branch,
   not yet a canonical git-format-patch email series.
+
+
+## Startup polling bound
+
+The vendor source defines soft-start choices up to 2000 us and VREG_OK
+debounce choices up to 32 us for each of BST, LDO and NCP. Its maximum
+per-poll delay is therefore 3 * 2000 + 3 * 32 = 6096 us; ten attempts
+plus the 100 us sleep margin are under 62 ms. The initial driver uses a
+100 ms bounded poll at 1 ms intervals, which exceeds that source-derived
+maximum. This is a conservative software bound, not a measured hardware
+timing guarantee.
