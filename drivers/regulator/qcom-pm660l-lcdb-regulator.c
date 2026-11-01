@@ -402,7 +402,7 @@ static int pm660l_lcdb_set_voltage_sel(struct regulator_dev *rdev,
 			if (rollback_ret) {
 				lcdb->fault_latched = true;
 				dev_err(lcdb->dev,
-					"boost write failed (%d), rollback failed (%d)\\n",
+					"boost write failed (%d), rollback failed (%d)\n",
 					ret, rollback_ret);
 			}
 			goto out;
@@ -419,7 +419,7 @@ static int pm660l_lcdb_set_voltage_sel(struct regulator_dev *rdev,
 		if (rollback_ret) {
 			lcdb->fault_latched = true;
 			dev_err(lcdb->dev,
-				"output write failed (%d), output rollback failed (%d); keeping boost conservative\\n",
+				"output write failed (%d), output rollback failed (%d); keeping boost conservative\n",
 				ret, rollback_ret);
 			goto out;
 		}
@@ -431,7 +431,7 @@ static int pm660l_lcdb_set_voltage_sel(struct regulator_dev *rdev,
 			if (rollback_ret) {
 				lcdb->fault_latched = true;
 				dev_err(lcdb->dev,
-					"output write failed (%d), boost rollback failed (%d)\\n",
+					"output write failed (%d), boost rollback failed (%d)\n",
 					ret, rollback_ret);
 			}
 		}
@@ -512,7 +512,7 @@ static irqreturn_t pm660l_lcdb_sc_irq_thread(int irq, void *data)
 			goto fault;
 		lcdb->fault_latched = true;
 		dev_err(lcdb->dev,
-			"short circuit with no consumer request; LCDB shut down\\n");
+			"short circuit with no consumer request; LCDB shut down\n");
 		goto handled;
 	}
 
