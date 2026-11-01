@@ -24,12 +24,15 @@ properties:
 
   reg:
     $ref: /schemas/types.yaml#/definitions/uint32-array
+    minItems: 1
     maxItems: 1
 
   interrupts:
+    minItems: 1
     maxItems: 1
 
   interrupt-names:
+    minItems: 1
     maxItems: 1
     items:
       - const: sc-irq
