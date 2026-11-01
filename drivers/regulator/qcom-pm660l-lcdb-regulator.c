@@ -314,11 +314,13 @@ static int pm660l_lcdb_is_enabled(struct regulator_dev *rdev)
 static int pm660l_lcdb_get_voltage_sel(struct regulator_dev *rdev)
 {
 	struct pm660l_lcdb_rail *rail = rdev_get_drvdata(rdev);
+	struct pm660l_lcdb *lcdb = rail->lcdb;
 	unsigned int val;
 	int ret;
 
-	ret = regmap_read(rail->lcdb->regmap,
-			  rail->lcdb->base + rail->voltage_reg, &val);
+	mutex_lock(&lcdb->lock);
+	ret = regmap_read(lcdb->regmap, lcdb->base + rail->voltage_reg, &val);
+	mutex_unlock(&lcdb->lock);
 	if (ret)
 		return ret;
 
