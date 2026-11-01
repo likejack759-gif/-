@@ -43,9 +43,15 @@ Linux v7.3.1 provides:
   `IS_ERR()` before dereferencing it.
 - The standard PMIC child regmap access pattern is
   `dev_get_regmap(dev->parent, NULL)`.
-- The upstream PM660L DTS has two SPMI USIDs (`pmic@2` and `pmic@3`);
-  the LCDB function at base `0xec00` must be attached under the correct
-  PMIC function parent, which must be confirmed against the vendor tree.
+- The upstream PM660L DTS has two SPMI USIDs (`pmic@2` and `pmic@3`).
+  The vendor LCDB node is nested under the PM660L base node at USID 2
+  (`qcom,pm660l@2`), so the upstream node belongs under the corresponding
+  `pmic@2` node, not `pmic@3`.
+- The vendor node uses its downstream two-cell child address/size encoding
+  (`reg = <0xec00 0x100>`). The upstream PMIC node uses
+  `#address-cells = <1>` and `#size-cells = <0>`; therefore the upstream
+  LCDB child must use the upstream one-cell register-address form
+  (`reg = <0xec00>`) and must not copy the vendor tuple unchanged.
 
 The vendor's `pmic_rev_id->rev4` maps to the upstream PMIC `major` field,
 because the upstream PMIC core reads PMIC_REV4 into `major`. The vendor
