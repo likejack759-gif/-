@@ -107,3 +107,20 @@ then extend the acceptance checklist before implementation.
 - Next: obtain/use an exact v7.3.1 source checkout, reconstruct the
   logical commits cleanly, run full-tree checks, then export the canonical
   mail series and checksums.
+
+
+### Patch-series restructuring decision
+
+The final logical split for this initial board-enablement change is:
+
+1. A standalone binding/schema commit documenting `xiaomi,platina`
+   under the SDM660 compatible list.
+2. A board-enablement commit containing both
+   `sdm660-xiaomi-platina.dts` and its Qualcomm DTB Makefile entry.
+
+This keeps the binding change independently reviewable while avoiding an
+artificial intermediate state in which the DTS exists but has no build
+target. Because this initial series contains no driver patch, the DTS change
+is suitable for a separate SoC-tree posting; if later combined with driver
+patches, it belongs at the end of that combined series. The final packaging
+must follow the target maintainer's current preference.
