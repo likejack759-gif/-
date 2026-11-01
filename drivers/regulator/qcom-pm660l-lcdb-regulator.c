@@ -180,7 +180,7 @@ static int pm660l_lcdb_module_enable(struct pm660l_lcdb *lcdb,
 			lcdb->fault_latched = true;
 			if (disable_ret)
 				dev_err(lcdb->dev,
-					"revision workaround failed (%d), shutdown failed (%d)\\n",
+					"revision workaround failed (%d), shutdown failed (%d)\n",
 					ret, disable_ret);
 			return ret;
 		}
@@ -617,7 +617,7 @@ fault_unlocked:
 
 		lcdb->fault_latched = true;
 		dev_err(lcdb->dev,
-			"LCDB short-circuit status read failed (%d), shutdown result %d\\n",
+			"LCDB short-circuit status read failed (%d), shutdown result %d\n",
 			ret, disable_ret);
 	}
 	mutex_unlock(&lcdb->lock);
@@ -700,7 +700,7 @@ static int pm660l_lcdb_probe(struct platform_device *pdev)
 			  lcdb->base + PM660L_LCDB_ENABLE_REG, &val);
 	if (ret)
 		return dev_err_probe(&pdev->dev, ret,
-				     "failed to read module enable state\\n");
+				     "failed to read module enable state\n");
 	lcdb->module_enabled = !!(val & PM660L_LCDB_MODULE_EN_BIT);
 
 	/* Match the vendor handoff: set MODULE_RDY only while the block is off. */
@@ -709,14 +709,14 @@ static int pm660l_lcdb_probe(struct platform_device *pdev)
 				  lcdb->base + PM660L_LCDB_MODULE_RDY_REG, &val);
 		if (ret)
 			return dev_err_probe(&pdev->dev, ret,
-					     "failed to read MODULE_RDY\\n");
+					     "failed to read MODULE_RDY\n");
 		if (!(val & BIT(7))) {
 			ret = regmap_update_bits(lcdb->regmap,
 						 lcdb->base + PM660L_LCDB_MODULE_RDY_REG,
 						 BIT(7), BIT(7));
 			if (ret)
 				return dev_err_probe(&pdev->dev, ret,
-						     "failed to set MODULE_RDY\\n");
+						     "failed to set MODULE_RDY\n");
 		}
 	}
 
