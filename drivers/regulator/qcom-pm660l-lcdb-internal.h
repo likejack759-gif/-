@@ -141,4 +141,37 @@ pm660l_lcdb_next_disable_mask(unsigned int old_mask, unsigned int rail,
 	return 0;
 }
 
+/* PM660L LCDB register offsets and status fields (relative to base 0xec00). */
+#define PM660L_LCDB_STS3_REG       0x0a
+#define PM660L_LCDB_STS4_REG       0x0b
+#define PM660L_LCDB_INT_RT_REG     0x10
+#define PM660L_LCDB_BST_VOLT_REG   0x41
+#define PM660L_LCDB_MODULE_RDY_REG 0x45
+#define PM660L_LCDB_ENABLE_REG     0x46
+#define PM660L_LCDB_MISC_CTL_REG   0x60
+#define PM660L_LCDB_LDO_VOLT_REG   0x71
+#define PM660L_LCDB_NCP_VOLT_REG   0x81
+#define PM660L_LCDB_SEC_ACCESS_REG 0xd0
+
+#define PM660L_LCDB_VREG_OK_BIT    (1U << 7)
+#define PM660L_LCDB_MODULE_EN_BIT  (1U << 7)
+#define PM660L_LCDB_OVERALL_OK_BIT (1U << 0)
+#define PM660L_LCDB_SC_ERROR_BIT   (1U << 1)
+#define PM660L_LCDB_SCP_DISABLE_BIT (1U << 0)
+#define PM660L_LCDB_SEC_ACCESS_KEY 0xa5U
+#define PM660L_LCDB_V2P0_REV4      0x02U
+
+static inline int pm660l_lcdb_needs_ncp_scp_wa(unsigned int pmic_rev4)
+{
+	return pmic_rev4 < PM660L_LCDB_V2P0_REV4;
+}
+
+/* Decode the per-output VREG_OK bits after the required STS3/STS4 pre-write. */
+static inline unsigned int
+pm660l_lcdb_decode_output_status(unsigned int sts3, unsigned int sts4)
+{
+	return ((sts3 & PM660L_LCDB_VREG_OK_BIT) ? PM660L_LCDB_REQ_LDO : 0) |
+	       ((sts4 & PM660L_LCDB_VREG_OK_BIT) ? PM660L_LCDB_REQ_NCP : 0);
+}
+
 #endif /* __QCOM_PM660L_LCDB_INTERNAL_H__ */
