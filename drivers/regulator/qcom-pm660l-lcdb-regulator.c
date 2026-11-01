@@ -240,7 +240,6 @@ static int pm660l_lcdb_module_disable(struct pm660l_lcdb *lcdb)
 		} else if (!(val & PM660L_LCDB_MODULE_EN_BIT)) {
 			lcdb->module_enabled = false;
 			lcdb->output_good_mask = 0;
-			lcdb->fault_latched = true;
 		} else {
 			lcdb->module_enabled = true;
 		}
