@@ -162,6 +162,8 @@ static int pm660l_lcdb_old_revision_wa(struct pm660l_lcdb *lcdb)
 	return 0;
 }
 
+static int pm660l_lcdb_module_disable(struct pm660l_lcdb *lcdb);
+
 static int pm660l_lcdb_module_enable(struct pm660l_lcdb *lcdb,
 				     bool run_revision_wa)
 {
