@@ -27,8 +27,8 @@ The following points were checked against the upstream v7.3.1 Qualcomm DTS sourc
 - Board model and compatible strings.
 - Serial console alias and stdout path.
 - BLSP1 UART2 enabled as a provisional console path.
-- A Makefile integration patch adding `sdm660-xiaomi-platina.dtb` to the
-  Qualcomm DTB list.
+- A three-patch initial series, ordered as binding, DTS source, then Makefile
+  DTB target. The DTS source is introduced before its build target.
 
 ## Deliberately not enabled
 
@@ -40,8 +40,9 @@ drivers, firmware and hardware dependencies have been verified.
 ## Validation state
 
 - Branch: `dev/platina-device-tree-v1`.
-- The Makefile patch passed a local `git apply --check` against a minimal
-  context fixture matching the upstream v7.3.1 Makefile lines.
+- The three patch files are stored in the repository in dependency order.
+- The patch series has not yet been applied with `git apply --check` against a
+  complete Linux v7.3.1 checkout.
 - The DTS has **not** yet been compiled with the kernel's `dtc` build.
 - `dtbs_check` has **not** yet been run.
 - No DTB/DTBO has been boot-tested on hardware.
