@@ -151,3 +151,38 @@ must follow the target maintainer's current preference.
 
 No driver source code has been implemented, compiled or hardware-tested in
 this step. This is a verified upstream-reference review and design milestone.
+
+
+## PM660L LCDB first implementation milestone (2026-11-01)
+
+- Retrieved and reviewed the exact vendor LCDB source at commit
+  aade098492360e5e72a29f8561b4d3864090df33, including selector encoding,
+  boost programming, PM660L revision workaround, output status handling
+  and secure-write table.
+- Retrieved Linux v7.3.1 raw source for qcom-spmi-pmic.h and
+  qcom-spmi-pmic.c. Confirmed PM660L_SUBTYPE is 0x1a, qcom_pmic_get()
+  returns an error pointer on invalid parent and otherwise the shared
+  struct qcom_spmi_pmic, with major populated from PMIC_REV4.
+- Retrieved Linux v7.3.1 regulator driver interface. The set_voltage
+  contract requires choosing a supported voltage within [min_uV, max_uV];
+  is_enabled may return negative errno.
+- Added drivers/regulator/qcom-pm660l-lcdb-internal.h with pure output
+  selector, interval mapping, boost selector and boost target helpers.
+- Added tests/pm660l-lcdb-selector-test.c.
+- Added docs/pm660l-lcdb-register-map.md with the source-derived register
+  map, voltage encodings, PM660L revision threshold, status pre-write
+  sequence and old-revision SCP workaround.
+- Host fixture command:
+  gcc -std=c11 -Wall -Wextra -Werror -O2
+  tests/pm660l-lcdb-selector-test.c -o selector-test
+  ./selector-test
+  Result: exit status 0; output "PM660L LCDB selector tests: PASS".
+- Coverage: all 32 output selector round trips; 4.90/4.95 V boundary;
+  unrepresentable intervals; invalid min/max; boost selector endpoints;
+  boost headroom floor and ceiling.
+- This is a host selector fixture test only. It is not KUnit, does not
+  compile the kernel driver, and does not validate SPMI/regmap transactions.
+
+The PM660L driver itself is not yet implemented. Next code work is the
+provider state machine and PM660L-only register operations, followed by
+regmap fault-injection tests and full v7.3.1 build integration.
