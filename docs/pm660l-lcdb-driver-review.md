@@ -92,3 +92,16 @@ plus the 100 us sleep margin are under 62 ms. The initial driver uses a
 100 ms bounded poll at 1 ms intervals, which exceeds that source-derived
 maximum. This is a conservative software bound, not a measured hardware
 timing guarantee.
+
+
+## Platina vendor-DTS feature scope
+
+The complete vendor PM660L LCDB node contains the SPMI base, SC IRQ,
+qcom,pmic-revid phandle, and two LDO/NCP child nodes with standard
+regulator-name/min/max constraints. It does not set optional
+qcom,ldo-voltage-mv, qcom,ncp-voltage-mv, current-limit, pull-down,
+soft-start, qcom,bst-headroom-mv, qcom,voltage-step-ramp,
+qcom,pwrdn-delay-ms or qcom,ttw-enable properties. The port replaces the
+vendor qcom,pmic-revid phandle with qcom_pmic_get() and uses the child node
+names directly. The initially omitted optional controls therefore do not
+represent active properties in the Platina vendor node.
