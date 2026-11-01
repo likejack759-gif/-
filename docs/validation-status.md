@@ -174,9 +174,11 @@ this step. This is a verified upstream-reference review and design milestone.
   sequence and old-revision SCP workaround.
 - Host fixture command:
   gcc -std=c11 -Wall -Wextra -Werror -O2
-  tests/pm660l-lcdb-selector-test.c -o selector-test
-  ./selector-test
-  Result: exit status 0; output "PM660L LCDB selector tests: PASS".
+  /tmp/lcdbsel/test-final.c -o /tmp/lcdbsel/test-final
+  /tmp/lcdbsel/test-final
+  Result: exit status 0; output "PM660L LCDB helper tests: PASS".
+  The local fixture is a manually mirrored copy of the committed helper and
+  test logic, not a build from a complete repository checkout.
 - Coverage: all 32 output selector round trips; 4.90/4.95 V boundary;
   unrepresentable intervals; invalid min/max; boost selector endpoints;
   boost headroom floor and ceiling.
@@ -194,11 +196,9 @@ regmap fault-injection tests and full v7.3.1 build integration.
   one rail while the other remains requested, last-request shutdown,
   invalid/unbalanced requests, revision 1.0/1.1 versus 2.0 workaround
   selection, and all four output-good combinations.
-- Re-ran with:
-  gcc -std=c11 -Wall -Wextra -Werror -O2
-  tests/pm660l-lcdb-selector-test.c -o selector-test
-  ./selector-test
-  Result: exit status 0; output "PM660L LCDB helper tests: PASS".
+- Re-ran the local mirrored host fixture at /tmp/lcdbsel/test-final.c
+  with gcc -std=c11 -Wall -Wextra -Werror -O2; exit status 0,
+  output "PM660L LCDB helper tests: PASS".
 
 
 - Review refinement: corrected the output map helper to accept voltage
