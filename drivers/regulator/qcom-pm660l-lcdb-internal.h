@@ -40,8 +40,7 @@ pm660l_lcdb_map_voltage(unsigned int min_uv, unsigned int max_uv,
 {
 	unsigned int sel, uv;
 
-	if (!selector || min_uv > max_uv || min_uv < PM660L_LCDB_MIN_UV ||
-	    max_uv > PM660L_LCDB_MAX_UV)
+	if (!selector || min_uv > max_uv)
 		return -1;
 
 	for (sel = 0; sel < PM660L_LCDB_N_VOLTAGES; sel++) {
