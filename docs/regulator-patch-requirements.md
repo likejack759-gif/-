@@ -129,3 +129,20 @@ The PM660L implementation must additionally:
 - avoid importing PM8150L voltage, boost, timing or fault parameters.
 
 Detailed review: docs/upstream-lcdb-series-review.md.
+
+
+## Target v7.3.1 MAINTAINERS routing checked
+
+At target commit 79a907609d53d5cd645b42c11550d295d43abf99, the
+REGULATOR FRAMEWORK entry lists:
+- Liam Girdwood <lgirdwood@gmail.com>
+- Mark Brown <broonie@kernel.org>
+- List: linux-kernel@vger.kernel.org
+- Tree: git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git
+
+The ARM/QUALCOMM MAILING LIST entry lists linux-arm-msm@vger.kernel.org
+and covers Qualcomm bindings, Qualcomm driver paths and arm64 Qualcomm DTS.
+These are routing facts from the target MAINTAINERS file, not a final
+patch Cc list. For a PM660L driver/binding series, obtain subsystem review
+from regulator maintainers and the relevant Qualcomm/DT maintainers; board
+DTS remains a Qualcomm SoC/DT-tree change.
