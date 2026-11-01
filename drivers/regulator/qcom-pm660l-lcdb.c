@@ -418,8 +418,11 @@ static int pm660l_lcdb_set_voltage_sel(struct regulator_dev *rdev,
 	if (new_bst_uv > old_bst_uv) {
 		ret = pm660l_lcdb_update(lcdb, PM660L_LCDB_BST_VOLT_REG,
 					 GENMASK(4, 0), new_bst_sel);
-		if (ret)
+		if (ret) {
+			/* A failed bus write may have reached the PMIC. */
+			lcdb->hw_state_unknown = true;
 			goto out;
+		}
 		boost_raised = true;
 	}
 
@@ -431,17 +434,41 @@ static int pm660l_lcdb_set_voltage_sel(struct regulator_dev *rdev,
 					PM660L_LCDB_BST_VOLT_REG,
 					GENMASK(4, 0), old_bst_sel);
 			if (rollback_ret)
-				lcdb->hw_state_unknown = true;
+				dev_err(lcdb->dev,
+					"boost rollback failed: %d (original %d)\\n",
+					rollback_ret, ret);
 		}
+		/* Output-write completion is uncertain after an SPMI error. */
+		lcdb->hw_state_unknown = true;
 		goto out;
 	}
 
 	if (new_bst_uv < old_bst_uv) {
 		ret = pm660l_lcdb_update(lcdb, PM660L_LCDB_BST_VOLT_REG,
 					 GENMASK(4, 0), new_bst_sel);
-		if (ret)
-			/* Output is at its new value; old boost remains safe. */
+		if (ret) {
+			unsigned int readback;
+			int read_ret;
+
+			/*
+			 * The output is already at its lower voltage, so the
+			 * old boost remains electrically conservative.  Verify
+			 * whether the lower boost write reached the PMIC.
+			 */
+			read_ret = pm660l_lcdb_read(lcdb,
+						    PM660L_LCDB_BST_VOLT_REG,
+						    &readback);
+			if (read_ret ||
+			    (readback & GENMASK(4, 0)) != old_bst_sel &&
+			    (readback & GENMASK(4, 0)) != new_bst_sel)
+				lcdb->hw_state_unknown = true;
+			if (!read_ret &&
+			    (readback & GENMASK(4, 0)) == new_bst_sel) {
+				lcdb->boost_uv = new_bst_uv;
+				ret = 0;
+			}
 			goto out;
+		}
 	}
 
 	lcdb->boost_uv = new_bst_uv;
