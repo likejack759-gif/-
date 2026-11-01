@@ -271,3 +271,14 @@ through GitHub's repository API/raw-file access.
   fault-injection test or device hardware test has been run.
 - Existing host helper tests remain the only executed tests; they do not
   exercise the driver source or its state machine.
+
+
+## PM660L LCDB SPMI interrupt parent scope corrected (2026-11-01)
+
+- Re-read the complete vendor pm660l.dtsi with parent-node boundaries.
+- Confirmed LCDB is nested under qcom,pm660l@3 (USID 3), not qcom,pm660l@2.
+- Confirmed the SC IRQ specifier uses SID 3, matching the parent SPMI device.
+- The previously recorded SID 2/3 discrepancy was a false alarm caused by
+  inspecting a local excerpt without its full parent scope.
+- IRQ routing is no longer a blocker. The binding should require the named
+  sc-irq for PMIC revisions using IRQ-based SC recovery.
