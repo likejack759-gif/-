@@ -23,7 +23,11 @@ int main(void)
 	assert(pm660l_lcdb_map_voltage(4900001U, 4949999U, &sel) == -1);
 	assert(pm660l_lcdb_map_voltage(4950001U, 5000000U, &sel) == 0);
 	assert(pm660l_lcdb_list_voltage(sel) == 5000000U);
-	assert(pm660l_lcdb_map_voltage(3999999U, 5000000U, &sel) == -1);
+	assert(pm660l_lcdb_map_voltage(3900000U, 4100000U, &sel) == 0);
+	assert(sel == 0);
+	assert(pm660l_lcdb_map_voltage(5900000U, 6100000U, &sel) == 0);
+	assert(sel == 29);
+	assert(pm660l_lcdb_map_voltage(6000001U, 6100000U, &sel) == -1);
 	assert(pm660l_lcdb_map_voltage(5000000U, 4000000U, &sel) == -1);
 
 	assert(pm660l_lcdb_bst_map_voltage(4700000U, 4700000U, &sel) == 0);
