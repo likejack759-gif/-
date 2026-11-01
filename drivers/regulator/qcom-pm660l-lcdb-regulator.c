@@ -15,6 +15,7 @@
 #include <linux/mutex.h>
 #include <linux/of.h>
 #include <linux/platform_device.h>
+#include <linux/slab.h>
 #include <linux/regmap.h>
 #include <linux/regulator/driver.h>
 #include <soc/qcom/qcom-spmi-pmic.h>
@@ -98,6 +99,8 @@ static int pm660l_lcdb_poll_module_ready(struct pm660l_lcdb *lcdb)
 				return ret;
 
 			lcdb->output_good_mask = status;
+			if ((status & lcdb->request_mask) != lcdb->request_mask)
+				return -EIO;
 			return 0;
 		}
 
@@ -122,12 +125,15 @@ static int pm660l_lcdb_old_revision_wa(struct pm660l_lcdb *lcdb)
 				 PM660L_LCDB_MODULE_EN_BIT);
 	if (ret)
 		return ret;
+	lcdb->module_enabled = true;
 
 	ret = regmap_update_bits(lcdb->regmap,
 				 lcdb->base + PM660L_LCDB_ENABLE_REG,
 				 PM660L_LCDB_MODULE_EN_BIT, 0);
-	if (ret)
+	if (ret) {
+		lcdb->fault_latched = true;
 		return ret;
+	}
 
 	lcdb->module_enabled = false;
 	usleep_range(10000, 10100);
@@ -136,16 +142,20 @@ static int pm660l_lcdb_old_revision_wa(struct pm660l_lcdb *lcdb)
 				 lcdb->base + PM660L_LCDB_MISC_CTL_REG,
 				 PM660L_LCDB_SCP_DISABLE_BIT,
 				 PM660L_LCDB_SCP_DISABLE_BIT);
-	if (ret)
+	if (ret) {
+		lcdb->fault_latched = true;
 		return ret;
+	}
 
 	usleep_range(1000, 1100);
 
 	ret = regmap_update_bits(lcdb->regmap,
 				 lcdb->base + PM660L_LCDB_MISC_CTL_REG,
 				 PM660L_LCDB_SCP_DISABLE_BIT, 0);
-	if (ret)
+	if (ret) {
+		lcdb->fault_latched = true;
 		return ret;
+	}
 
 	usleep_range(1000, 1100);
 	return 0;
@@ -161,8 +171,10 @@ static int pm660l_lcdb_module_enable(struct pm660l_lcdb *lcdb,
 
 	if (run_revision_wa) {
 		ret = pm660l_lcdb_old_revision_wa(lcdb);
-		if (ret)
+		if (ret) {
+			lcdb->fault_latched = true;
 			return ret;
+		}
 	}
 
 	ret = regmap_update_bits(lcdb->regmap,
@@ -180,10 +192,12 @@ static int pm660l_lcdb_module_enable(struct pm660l_lcdb *lcdb,
 		disable_ret = regmap_update_bits(lcdb->regmap,
 						 lcdb->base + PM660L_LCDB_ENABLE_REG,
 						 PM660L_LCDB_MODULE_EN_BIT, 0);
-		if (!disable_ret)
+		if (!disable_ret) {
 			lcdb->module_enabled = false;
-		else
+			lcdb->output_good_mask = 0;
+		} else {
 			lcdb->fault_latched = true;
+		}
 		return ret;
 	}
 
@@ -316,7 +330,7 @@ static int pm660l_lcdb_set_voltage_sel(struct regulator_dev *rdev,
 	struct pm660l_lcdb_rail *rail = rdev_get_drvdata(rdev);
 	struct pm660l_lcdb *lcdb = rail->lcdb;
 	unsigned int old_sel, other_sel, old_bst_sel, new_bst_sel;
-	unsigned int old_uv, other_uv, new_uv, old_bst_uv, new_bst_uv;
+	unsigned int other_uv, new_uv, old_bst_uv, new_bst_uv;
 	unsigned int ldo_uv, ncp_uv, boost_uv;
 	unsigned int other_reg;
 	bool boost_raised;
@@ -349,7 +363,6 @@ static int pm660l_lcdb_set_voltage_sel(struct regulator_dev *rdev,
 	old_sel &= GENMASK(4, 0);
 	other_sel &= GENMASK(4, 0);
 	old_bst_sel &= GENMASK(4, 0);
-	old_uv = pm660l_lcdb_list_voltage(old_sel);
 	other_uv = pm660l_lcdb_list_voltage(other_sel);
 	new_uv = pm660l_lcdb_list_voltage(selector);
 	old_bst_uv = PM660L_LCDB_BST_MIN_UV +
@@ -420,7 +433,7 @@ out:
 	return ret;
 }
 
-static int pm660l_lcdb_map_voltage(struct regulator_dev *rdev,
+static int pm660l_lcdb_regulator_map_voltage(struct regulator_dev *rdev,
 				   int min_uv, int max_uv)
 {
 	unsigned int selector;
@@ -437,7 +450,7 @@ static int pm660l_lcdb_map_voltage(struct regulator_dev *rdev,
 	return selector;
 }
 
-static int pm660l_lcdb_list_voltage(struct regulator_dev *rdev,
+static int pm660l_lcdb_regulator_list_voltage(struct regulator_dev *rdev,
 				    unsigned int selector)
 {
 	return pm660l_lcdb_list_voltage(selector);
@@ -449,8 +462,8 @@ static const struct regulator_ops pm660l_lcdb_ops = {
 	.is_enabled = pm660l_lcdb_is_enabled,
 	.get_voltage_sel = pm660l_lcdb_get_voltage_sel,
 	.set_voltage_sel = pm660l_lcdb_set_voltage_sel,
-	.map_voltage = pm660l_lcdb_map_voltage,
-	.list_voltage = pm660l_lcdb_list_voltage,
+	.map_voltage = pm660l_lcdb_regulator_map_voltage,
+	.list_voltage = pm660l_lcdb_regulator_list_voltage,
 };
 
 static irqreturn_t pm660l_lcdb_sc_irq_thread(int irq, void *data)
@@ -519,7 +532,7 @@ static int pm660l_lcdb_register_rail(struct pm660l_lcdb *lcdb,
 	rail->request_bit = request_bit;
 	rail->voltage_reg = voltage_reg;
 	rail->desc.name = name;
-	rail->desc.of_match = name;
+	rail->desc.of_match = request_bit == PM660L_LCDB_REQ_LDO ? "ldo" : "ncp";
 	rail->desc.id = id;
 	rail->desc.owner = THIS_MODULE;
 	rail->desc.type = REGULATOR_VOLTAGE;
