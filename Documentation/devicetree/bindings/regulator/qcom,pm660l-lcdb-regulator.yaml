@@ -27,6 +27,7 @@ properties:
     maxItems: 1
 
   interrupt-names:
+    maxItems: 1
     items:
       - const: sc-irq
 
