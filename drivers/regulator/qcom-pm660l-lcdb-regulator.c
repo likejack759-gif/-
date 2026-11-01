@@ -584,10 +584,14 @@ handled:
 
 fault_unlocked:
 	mutex_lock(&lcdb->lock);
-	lcdb->fault_latched = true;
-	dev_err(lcdb->dev,
-		"LCDB short-circuit status read failed; outputs locked (error %d)\n",
-		ret);
+	{
+		int disable_ret = pm660l_lcdb_module_disable(lcdb);
+
+		lcdb->fault_latched = true;
+		dev_err(lcdb->dev,
+			"LCDB short-circuit status read failed (%d), shutdown result %d\\n",
+			ret, disable_ret);
+	}
 	mutex_unlock(&lcdb->lock);
 	return IRQ_HANDLED;
 }
