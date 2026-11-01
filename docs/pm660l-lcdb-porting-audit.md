@@ -110,7 +110,7 @@ LDO and NCP therefore need independent provider-side request state even
 though the hardware module enable is shared. A disable callback for one
 output must not disable the shared module while the other output remains
 requested. Each `.is_enabled` callback must report its own VREG_OK status and
-propagate SPMI errors. See `docs/regulator-subsystem-requirements.md` for the
+propagate SPMI errors. See `docs/regulator-patch-requirements.md` for the
 full design and test matrix.
 
 ## Required complete patch scope
