@@ -85,7 +85,8 @@ static int pm660l_lcdb_read_output_status(struct pm660l_lcdb *lcdb,
 	return 0;
 }
 
-static int pm660l_lcdb_poll_module_ready(struct pm660l_lcdb *lcdb)
+static int pm660l_lcdb_poll_module_ready(struct pm660l_lcdb *lcdb,
+					 unsigned int required_mask)
 {
 	unsigned int val, status;
 	int i, ret;
@@ -102,9 +103,8 @@ static int pm660l_lcdb_poll_module_ready(struct pm660l_lcdb *lcdb)
 				return ret;
 
 			lcdb->output_good_mask = status;
-			if ((status & lcdb->request_mask) != lcdb->request_mask)
-				return -EIO;
-			return 0;
+			if ((status & required_mask) == required_mask)
+				return 0;
 		}
 
 		usleep_range(PM660L_LCDB_STATUS_POLL_US,
@@ -175,12 +175,13 @@ static int pm660l_lcdb_enable_wa(struct pm660l_lcdb *lcdb)
 
 static int pm660l_lcdb_module_disable(struct pm660l_lcdb *lcdb);
 
-static int pm660l_lcdb_module_enable(struct pm660l_lcdb *lcdb)
+static int pm660l_lcdb_module_enable(struct pm660l_lcdb *lcdb,
+				     unsigned int required_mask)
 {
 	int ret;
 
 	if (lcdb->module_enabled)
-		return pm660l_lcdb_poll_module_ready(lcdb);
+		return pm660l_lcdb_poll_module_ready(lcdb, required_mask);
 
 	ret = pm660l_lcdb_enable_wa(lcdb);
 	if (ret) {
@@ -207,7 +208,7 @@ static int pm660l_lcdb_module_enable(struct pm660l_lcdb *lcdb)
 	}
 
 	lcdb->module_enabled = true;
-	ret = pm660l_lcdb_poll_module_ready(lcdb);
+	ret = pm660l_lcdb_poll_module_ready(lcdb, required_mask);
 	if (ret) {
 		int disable_ret = pm660l_lcdb_module_disable(lcdb);
 
@@ -284,7 +285,7 @@ static int pm660l_lcdb_enable(struct regulator_dev *rdev)
 			ret = -EIO;
 			goto out;
 		}
-		ret = pm660l_lcdb_module_enable(lcdb);
+		ret = pm660l_lcdb_module_enable(lcdb, lcdb->request_mask);
 		if (ret)
 			goto out;
 		started_module = true;
