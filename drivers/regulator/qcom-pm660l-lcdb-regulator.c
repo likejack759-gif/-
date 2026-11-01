@@ -633,7 +633,7 @@ static irqreturn_t pm660l_lcdb_sc_irq_thread(int irq, void *data)
 
 	/* Match the PM660L discharge interval before restarting the converter. */
 	usleep_range(10000, 10100);
-	ret = pm660l_lcdb_module_enable(lcdb);
+	ret = pm660l_lcdb_module_enable(lcdb, lcdb->request_mask);
 	if (ret)
 		goto fault_locked;
 
