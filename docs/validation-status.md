@@ -222,3 +222,28 @@ source audits and patch metadata. A complete local checkout is still not
 available; the container's git ls-remote attempt failed because DNS/network
 access to github.com was unavailable. Individual source files were retrieved
 through GitHub's repository API/raw-file access.
+
+
+## PM660L LCDB driver implementation checkpoint (2026-11-01)
+
+- Added drivers/regulator/qcom-pm660l-lcdb.c. Latest driver commit:
+  df257c9f44b025bb4ccbffbd122e964f0dc046d0 (PM660L SC confirmation path).
+- Driver uses target v7.3.1 qcom_pmic_get() API and checks PM660L subtype
+  0x1a before registering two regulator devices.
+- Added shared module enable/request-mask handling, physical per-output
+  VREG_OK reporting, PM660L selector mapping, boost/output sequencing,
+  revision-specific SCP workaround, and threaded SC recovery for revisions
+  where the vendor driver requests the IRQ.
+- Added docs/pm660l-lcdb-integration.md with target Kconfig/Makefile
+  fragments and the expected device-tree child-node shape.
+- Driver source has been reviewed against the exact target regulator driver
+  header and PMIC API header, but has NOT been compiled against Linux v7.3.1.
+- No Kconfig or Makefile edits have been applied to a complete kernel tree;
+  the project repository currently holds the driver source and integration
+  instructions, not a full kernel checkout.
+- No YAML binding, PM660L DTSI node, or Platina consumer mapping has been
+  added. The SPMI interrupt SID discrepancy remains unresolved.
+- No KUnit/regmap fault injection, sparse, dt_binding_check, dtbs_check,
+  kernel build, boot image, flash, or device test has been performed.
+- Driver status: implementation in progress; not production-ready and not
+  safe to enable on the board until integration and validation blockers close.
