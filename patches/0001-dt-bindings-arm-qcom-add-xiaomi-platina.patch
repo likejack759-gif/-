@@ -1,0 +1,9 @@
+diff --git a/Documentation/devicetree/bindings/arm/qcom.yaml b/Documentation/devicetree/bindings/arm/qcom.yaml
+--- a/Documentation/devicetree/bindings/arm/qcom.yaml
++++ b/Documentation/devicetree/bindings/arm/qcom.yaml
+@@ -937,6 +937,7 @@
+       - items:
+           - enum:
+               - xiaomi,lavender
++              - xiaomi,platina
+           - const: qcom,sdm660
