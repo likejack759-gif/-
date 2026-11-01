@@ -779,11 +779,7 @@ static int pm660l_lcdb_probe(struct platform_device *pdev)
 		}
 	}
 
-	/* Initial request ownership is empty; physical boot state is preserved. */
-	ret = pm660l_lcdb_read_output_status(lcdb, &lcdb->output_good_mask);
-	if (ret)
-		return dev_err_probe(&pdev->dev, ret,
-				     "failed to read output-good status\n");
+	/* Consumer ownership starts empty; preserve boot status at probe. */
 
 	ldo_node = of_get_child_by_name(pdev->dev.of_node, "ldo");
 	if (!ldo_node)
@@ -833,10 +829,9 @@ static int pm660l_lcdb_probe(struct platform_device *pdev)
 	}
 
 	dev_info(&pdev->dev,
-		 "PM660L LCDB registered (PMIC v%u.%u, module %s, outputs 0x%x)\n",
+		 "PM660L LCDB registered (PMIC v%u.%u, module %s)\n",
 		 lcdb->pmic->major, lcdb->pmic->minor,
-		 lcdb->module_enabled ? "enabled" : "disabled",
-		 lcdb->output_good_mask);
+		 lcdb->module_enabled ? "enabled" : "disabled");
 	return 0;
 }
 
