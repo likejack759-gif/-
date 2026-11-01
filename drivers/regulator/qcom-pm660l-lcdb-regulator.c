@@ -233,7 +233,9 @@ static int pm660l_lcdb_module_disable(struct pm660l_lcdb *lcdb)
 
 		read_ret = regmap_read(lcdb->regmap,
 				       lcdb->base + PM660L_LCDB_ENABLE_REG, &val);
-		if (read_ret || !(val & PM660L_LCDB_MODULE_EN_BIT)) {
+		if (read_ret) {
+			lcdb->fault_latched = true;
+		} else if (!(val & PM660L_LCDB_MODULE_EN_BIT)) {
 			lcdb->module_enabled = false;
 			lcdb->output_good_mask = 0;
 			lcdb->fault_latched = true;
