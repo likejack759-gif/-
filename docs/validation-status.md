@@ -208,3 +208,17 @@ regmap fault-injection tests and full v7.3.1 build integration.
   whose minimum exceeds the hardware maximum.
 - Re-ran the host fixture with -Wall -Wextra -Werror; exit status 0,
   output "PM660L LCDB helper tests: PASS".
+
+
+## Exact target baseline identity
+
+The GitHub refs API now confirms the v7.3.1 tag object and peeled commit:
+- Tag object: dfc1145bbaa1c5dd626fd25d9ae8fc277864e7bd
+- Target commit: 79a907609d53d5cd645b42c11550d295d43abf99
+- Commit date: 2026-10-30T12:09:52Z
+- Repository: gregkh/linux
+This peeled commit is the exact base identity to record in subsequent
+source audits and patch metadata. A complete local checkout is still not
+available; the container's git ls-remote attempt failed because DNS/network
+access to github.com was unavailable. Individual source files were retrieved
+through GitHub's repository API/raw-file access.
