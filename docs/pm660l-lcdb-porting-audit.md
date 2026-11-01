@@ -37,14 +37,23 @@ Linux v7.3.1 provides:
   `include/soc/qcom/qcom-spmi-pmic.h`.
 - PMIC identity fields `subtype`, `major`, `minor` and `rev2`.
 - `PM660L_SUBTYPE == 0x1a`.
-- The PMIC core loads the PMIC revision before populating child devices.
+- `drivers/mfd/qcom-spmi-pmic.c` implements `qcom_pmic_get()` for a
+  function device whose direct parent is a supported PMIC SPMI device.
+  It returns the PMIC's shared revision structure; the caller must check
+  `IS_ERR()` before dereferencing it.
 - The standard PMIC child regmap access pattern is
   `dev_get_regmap(dev->parent, NULL)`.
+- The upstream PM660L DTS has two SPMI USIDs (`pmic@2` and `pmic@3`);
+  the LCDB function at base `0xec00` must be attached under the correct
+  PMIC function parent, which must be confirmed against the vendor tree.
 
 The vendor's `pmic_rev_id->rev4` maps to the upstream PMIC `major` field,
 because the upstream PMIC core reads PMIC_REV4 into `major`. The vendor
 PM660L v2.0 threshold is revision 4 value `0x02`; the NCP short-circuit
-workaround applies to PM660L revisions below that threshold.
+workaround applies to PM660L revisions below that threshold. The upstream
+port should use `qcom_pmic_get()` rather than importing the vendor
+`qcom,pmic-revid` phandle framework unless further source evidence requires
+otherwise.
 
 ## Register behavior that must be preserved
 
@@ -86,6 +95,17 @@ workaround applies to PM660L revisions below that threshold.
 13. Voltage-ramp failure after module enable lacks a complete rollback path.
 14. Probe-time hardware-already-enabled state must be reconciled with each
     output's actual status, not assumed to mean both outputs are enabled.
+
+## Regulator-core integration constraints
+
+The upstream regulator framework reference-counts enable/disable requests
+for each registered regulator, and explicitly supports shared supplies.
+LDO and NCP therefore need independent provider-side request state even
+though the hardware module enable is shared. A disable callback for one
+output must not disable the shared module while the other output remains
+requested. Each `.is_enabled` callback must report its own VREG_OK status and
+propagate SPMI errors. See `docs/regulator-subsystem-requirements.md` for the
+full design and test matrix.
 
 ## Required complete patch scope
 
