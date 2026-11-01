@@ -1,6 +1,6 @@
 # PM660L LCDB driver design — implementation plan
 
-Status: design stage; no driver code is implemented by this document.
+Status: first driver implementation exists in drivers/regulator/qcom-pm660l-lcdb.c; integration and validation remain incomplete.
 Target: Linux v7.3.1 regulator framework and PM660L hardware evidence from
 the vendor source commit recorded in pm660l-lcdb-porting-audit.md.
 
@@ -179,3 +179,45 @@ One critical device-tree detail remains unresolved: the vendor LCDB node is
 nested under USID 2 but its interrupt specifier names slave ID 3. The SPMI
 interrupt binding defines the first cell as the slave ID. This must be
 verified before authoring the upstream PM660L node or final binding example.
+
+
+## First driver implementation review (2026-11-01)
+
+The first PM660L-only platform driver implementation is now present at
+drivers/regulator/qcom-pm660l-lcdb.c.
+
+Implemented in this checkpoint:
+- Parent SPMI regmap acquisition and qcom_pmic_get() subtype/revision check.
+- Two regulator devices with the PM660L 32-selector output table.
+- Shared module-enable bit with independent Linux LDO/NCP request ownership.
+- Per-output physical VREG_OK reporting, including the vendor-required
+  STS3/STS4 write-before-read status transaction.
+- PM660L rev4 < 0x02 NCP SCP enable workaround.
+- Boost/output voltage sequencing: raise boost before raising output and
+  lower boost only after lowering output.
+- Best-effort boost rollback after an output write failure; rollback failure
+  marks hardware state unknown.
+- Threaded short-circuit recovery for the newer-revision path, preserving
+  the vendor distinction between touch-wake status confirmation and normal
+  interrupt confirmation. A failed module shutdown prevents restart.
+- The SC IRQ is not requested on revisions where the vendor workaround
+  applies, matching the original driver behavior.
+
+Important limitations:
+- No full v7.3.1 checkout was available, so the driver has not been compiled.
+- Kconfig/Makefile integration is documented in
+  docs/pm660l-lcdb-integration.md but has not yet been applied to a complete
+  kernel tree.
+- The SC interrupt SID 2/3 discrepancy is unresolved; no board DTS node is
+  added and no interrupt routing is assumed.
+- The IRQ is optional in this first code checkpoint. Without it, automatic
+  SC recovery is unavailable; do not treat the driver as production-ready.
+- No regulator binding, KUnit fake-regmap tests, sparse, dt_binding_check,
+  dtbs_check, full kernel build or hardware test has been run.
+- The implementation does not yet expose vendor touch-wake class controls,
+  current limits, soft-start configuration or debug interfaces.
+
+Before board integration, review bootloader handoff and regulator core
+constraints against the complete target source, add fake-regmap fault
+injection tests, resolve the interrupt route, and run the full validation
+matrix. This checkpoint is code-in-progress, not a safe-to-flash driver.
