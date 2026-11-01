@@ -264,6 +264,7 @@ static int pm660l_lcdb_enable(struct regulator_dev *rdev)
 		ret = -EINVAL;
 		goto out;
 	}
+	(void)enable_module;
 
 	ret = pm660l_lcdb_module_enable(lcdb, rail->request_bit);
 	if (ret) {
@@ -357,7 +358,7 @@ static int pm660l_lcdb_set_voltage_sel(struct regulator_dev *rdev,
 	struct pm660l_lcdb *lcdb = rail->lcdb;
 	unsigned int old_ldo_sel, old_ncp_sel, old_bst_sel;
 	unsigned int new_ldo_sel, new_ncp_sel, new_bst_sel;
-	unsigned int old_ldo_uv, old_ncp_uv, new_ldo_uv, new_ncp_uv;
+	unsigned int new_ldo_uv, new_ncp_uv;
 	unsigned int old_bst_uv, new_bst_uv, boost_value;
 	bool boost_raised = false;
 	int ret, rollback_ret;
@@ -390,8 +391,6 @@ static int pm660l_lcdb_set_voltage_sel(struct regulator_dev *rdev,
 	else
 		new_ncp_sel = old_ncp_sel;
 
-	old_ldo_uv = pm660l_lcdb_list_voltage(old_ldo_sel);
-	old_ncp_uv = pm660l_lcdb_list_voltage(old_ncp_sel);
 	new_ldo_uv = pm660l_lcdb_list_voltage(new_ldo_sel);
 	new_ncp_uv = pm660l_lcdb_list_voltage(new_ncp_sel);
 
@@ -486,6 +485,7 @@ static irqreturn_t pm660l_lcdb_sc_irq_thread(int irq, void *data)
 	unsigned int status;
 	s64 elapsed;
 	int ret;
+	irqreturn_t irqret = IRQ_HANDLED;
 
 	mutex_lock(&lcdb->lock);
 
@@ -494,7 +494,7 @@ static irqreturn_t pm660l_lcdb_sc_irq_thread(int irq, void *data)
 		goto out;
 
 	if (!(status & PM660L_LCDB_SC_ERROR_BIT)) {
-		ret = IRQ_NONE;
+		irqret = IRQ_NONE;
 		goto out;
 	}
 
@@ -540,7 +540,7 @@ static irqreturn_t pm660l_lcdb_sc_irq_thread(int irq, void *data)
 
 out:
 	mutex_unlock(&lcdb->lock);
-	return ret < 0 ? IRQ_HANDLED : ret;
+	return irqret;
 }
 
 static int pm660l_lcdb_register_rail(struct pm660l_lcdb *lcdb,
