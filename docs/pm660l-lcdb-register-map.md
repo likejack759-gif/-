@@ -148,28 +148,22 @@ The host test is a selector fixture test only. It does not prove kernel
 compilation, regmap behavior, regulator-core integration or hardware safety.
 
 
-## Outstanding SPMI interrupt routing discrepancy
+## SPMI interrupt routing verified
 
-The vendor PM660L DTS places the LCDB function node under the PM660L USID 2
-SPMI PMIC node, but encodes its short-circuit interrupt as
-<3 0xec 1 IRQ_TYPE_EDGE_RISING>. The first cell of the Qualcomm SPMI PMIC
-arbiter interrupt specifier is the slave ID. Other vendor functions under
-the same USID 2 node use SID 2 in their interrupt specifiers.
+The full vendor DTS scope has now been checked. The LCDB node is nested
+inside the SPMI PMIC child `pm660l_3: qcom,pm660l@3`, not the preceding
+USID 2 node. Its interrupt specifier begins with SID 3:
 
-This may be intentional cross-USID interrupt routing, or a downstream DTS
-error. Do not silently rewrite the LCDB interrupt to SID 2 or move the
-function node to USID 3 based only on the register address. The upstream
-PM660L LCDB node and binding must remain blocked until the SID 3 interrupt
-mapping is verified against the PMIC arbiter/runtime device tree or
-authoritative hardware documentation.
+```dts
+interrupts = <0x3 0xec 0x1 IRQ_TYPE_EDGE_RISING>;
+```
 
-The LCDB register base and regmap parent relationship are separate from the
-interrupt's SID and must be validated independently.
+Therefore the interrupt SID matches the LCDB function's parent SPMI device.
+The register base 0xec00 and the interrupt SID 3 are consistent with this
+node placement. The earlier suspected SID 2/3 discrepancy was a scope
+reading error and is closed.
 
-
-The selector mapper deliberately accepts caller intervals that extend beyond
-the regulator's physical range. It searches the supported selector table and
-returns the lowest listed voltage satisfying both bounds. For example,
-[3.9 V, 4.1 V] maps to 4.0 V, while [6.000001 V, 6.1 V] has no valid selector.
-This matches the regulator-core interval contract better than rejecting an
-otherwise satisfiable interval merely because max_uV exceeds 6.0 V.
+The driver can use the USID 3 parent regmap for LCDB register access and
+platform_get_irq_byname("sc-irq") for the short-circuit interrupt. The
+qcom_pmic_get() API resolves PMIC revision information for a child under
+the second USID through the PMIC's base-USID relationship.
