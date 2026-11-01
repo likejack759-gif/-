@@ -41,6 +41,28 @@ int main(void)
 	assert(uv == 6200000U);
 	assert(pm660l_lcdb_calc_boost(6000000U, 5800000U, 300000U, &uv) == -1);
 
-	puts("PM660L LCDB selector tests: PASS");
+
+	{
+		unsigned int mask;
+		int action;
+
+		assert(pm660l_lcdb_next_enable_mask(0, PM660L_LCDB_REQ_LDO,
+						    &mask, &action) == 0);
+		assert(mask == PM660L_LCDB_REQ_LDO && action == 1);
+		assert(pm660l_lcdb_next_enable_mask(mask, PM660L_LCDB_REQ_NCP,
+						    &mask, &action) == 0);
+		assert(mask == PM660L_LCDB_REQ_MASK && action == 0);
+		assert(pm660l_lcdb_next_disable_mask(mask, PM660L_LCDB_REQ_LDO,
+						     &mask, &action) == 0);
+		assert(mask == PM660L_LCDB_REQ_NCP && action == 0);
+		assert(pm660l_lcdb_next_disable_mask(mask, PM660L_LCDB_REQ_NCP,
+						     &mask, &action) == 0);
+		assert(mask == 0 && action == 1);
+		assert(pm660l_lcdb_next_disable_mask(0, PM660L_LCDB_REQ_LDO,
+						     &mask, &action) == -1);
+		assert(pm660l_lcdb_next_enable_mask(0, 4, &mask, &action) == -1);
+	}
+
+	puts("PM660L LCDB selector and shared-request tests: PASS");
 	return 0;
 }
