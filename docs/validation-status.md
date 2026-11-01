@@ -40,9 +40,11 @@ drivers, firmware and hardware dependencies have been verified.
 ## Validation state
 
 - Branch: `dev/platina-device-tree-v1`.
-- The three patch files are stored in the repository in dependency order.
-- The patch series has not yet been applied with `git apply --check` against a
-  complete Linux v7.3.1 checkout.
+- The three patch files are stored in dependency order, with an aggregate
+  complete-series patch and an application index.
+- `git apply --check` and `git apply` passed sequentially against a local
+  fixture containing the exact upstream v7.3.1 binding and Makefile context.
+- The fixture test does not replace validation against a complete kernel tree.
 - The DTS has **not** yet been compiled with the kernel's `dtc` build.
 - `dtbs_check` has **not** yet been run.
 - No DTB/DTBO has been boot-tested on hardware.
@@ -50,9 +52,9 @@ drivers, firmware and hardware dependencies have been verified.
 
 ## Next validation steps
 
-1. Place the DTS in the exact Linux v7.3.1 source tree and apply the
-   Makefile patch.
-2. Build `sdm660-xiaomi-platina.dtb` with the kernel build system.
+1. Apply the complete three-patch series to an exact Linux v7.3.1 source tree.
+2. Run `make dtbs_check` for the Qualcomm binding and build
+   `sdm660-xiaomi-platina.dtb` with the kernel build system.
 3. Resolve all include, label, compiler and schema errors.
 4. Compare inherited SoC/PMIC nodes with the device's runtime tree.
 5. Add one hardware subsystem at a time, with its driver and power sequence.
