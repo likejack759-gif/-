@@ -46,23 +46,28 @@ current-limit code has known encoding defects and is not safe to port as-is.
 
 ## Outstanding blockers before upstream-quality completion
 
-1. **SPMI IRQ SID**: vendor PM660L DTS places LCDB under USID 2 but encodes
-   interrupt SID 3. This routing must be resolved before enabling the IRQ
-   through a final binding and board DTS.
-2. **Binding**: no YAML binding exists yet for qcom,pm660l-lcdb-regulator.
-   Define the PM660L-specific compatible and two regulator child nodes.
-3. **Kernel integration**: Kconfig/Makefile fragments are prepared but have
+1. **Binding**: no YAML binding exists yet for qcom,pm660l-lcdb-regulator.
+   Define the PM660L-specific compatible, required SC interrupt and two
+   regulator child nodes.
+2. **Kernel integration**: Kconfig/Makefile fragments are prepared but have
    not been applied to a complete Linux v7.3.1 source checkout.
-4. **Compile**: no complete-tree object build or modpost has been run.
-5. **Fault injection**: no regmap fault-injection tests exist yet. The host
+3. **Compile**: no complete-tree object build or modpost has been run.
+4. **Fault injection**: no regmap fault-injection tests exist yet. The host
    helper fixture does not test the driver state machine.
-6. **Hardware**: no PM660L hardware execution, voltage measurement, display
+5. **Hardware**: no PM660L hardware execution, voltage measurement, display
    sequencing or short-circuit test has been performed.
-7. **PMIC boot state**: verify whether MODULE_RDY and the bootloader-enabled
+6. **PMIC boot state**: verify whether MODULE_RDY and the bootloader-enabled
    handoff behavior are correct on the actual Platina PM660L revision.
-8. **Voltage transaction**: confirm the exact boost/output update sequencing
+7. **Voltage transaction**: confirm the exact boost/output update sequencing
    and headroom behavior on hardware; rollback code is conservative but
    cannot prove analog transients from software inspection alone.
+
+## Resolved device-tree routing
+
+The full vendor DTS confirms the LCDB node is under PM660L USID 3 and the
+interrupt specifier also names SID 3. The earlier apparent SID mismatch was
+caused by overlooking the parent node boundary. IRQ routing is no longer a
+blocker; the binding and board DTS can now encode the verified topology.
 
 ## Review cautions
 
