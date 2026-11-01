@@ -104,4 +104,41 @@ pm660l_lcdb_calc_boost(unsigned int ldo_uv, unsigned int ncp_abs_uv,
 	return 0;
 }
 
+#define PM660L_LCDB_REQ_LDO  (1U << 0)
+#define PM660L_LCDB_REQ_NCP  (1U << 1)
+#define PM660L_LCDB_REQ_MASK (PM660L_LCDB_REQ_LDO | PM660L_LCDB_REQ_NCP)
+
+/*
+ * Calculate the next consumer-request mask without changing physical state.
+ * The caller serializes this decision with the hardware transition.
+ */
+static inline int
+pm660l_lcdb_next_enable_mask(unsigned int old_mask, unsigned int rail,
+			     unsigned int *new_mask, int *enable_module)
+{
+	if (!new_mask || !enable_module ||
+	    (rail != PM660L_LCDB_REQ_LDO && rail != PM660L_LCDB_REQ_NCP) ||
+	    (old_mask & ~PM660L_LCDB_REQ_MASK))
+		return -1;
+
+	*new_mask = old_mask | rail;
+	*enable_module = old_mask == 0;
+	return 0;
+}
+
+/* The shared module may be shut down only after the final request is removed. */
+static inline int
+pm660l_lcdb_next_disable_mask(unsigned int old_mask, unsigned int rail,
+			      unsigned int *new_mask, int *disable_module)
+{
+	if (!new_mask || !disable_module ||
+	    (rail != PM660L_LCDB_REQ_LDO && rail != PM660L_LCDB_REQ_NCP) ||
+	    (old_mask & ~PM660L_LCDB_REQ_MASK) || !(old_mask & rail))
+		return -1;
+
+	*new_mask = old_mask & ~rail;
+	*disable_module = *new_mask == 0;
+	return 0;
+}
+
 #endif /* __QCOM_PM660L_LCDB_INTERNAL_H__ */
