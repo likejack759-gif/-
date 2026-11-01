@@ -420,7 +420,7 @@ static int pm660l_lcdb_set_voltage_sel(struct regulator_dev *rdev,
 	unsigned int ldo_uv, ncp_uv, boost_uv;
 	unsigned int other_reg;
 	bool boost_raised;
-	int ret, rollback_ret;
+	int ret, rollback_ret, shutdown_ret;
 
 	if (selector >= PM660L_LCDB_N_VOLTAGES)
 		return -EINVAL;
@@ -487,9 +487,10 @@ static int pm660l_lcdb_set_voltage_sel(struct regulator_dev *rdev,
 						  GENMASK(4, 0), old_bst_sel);
 			if (rollback_ret) {
 				lcdb->fault_latched = true;
+				shutdown_ret = pm660l_lcdb_force_shutdown(lcdb);
 				dev_err(lcdb->dev,
-					"boost write failed (%d), rollback failed (%d)\n",
-					ret, rollback_ret);
+					"boost write failed (%d), rollback failed (%d), shutdown %d\n",
+					ret, rollback_ret, shutdown_ret);
 			}
 			goto out;
 		}
@@ -504,9 +505,10 @@ static int pm660l_lcdb_set_voltage_sel(struct regulator_dev *rdev,
 						  GENMASK(4, 0), old_sel);
 		if (rollback_ret) {
 			lcdb->fault_latched = true;
+			shutdown_ret = pm660l_lcdb_force_shutdown(lcdb);
 			dev_err(lcdb->dev,
-				"output write failed (%d), output rollback failed (%d); keeping boost conservative\n",
-				ret, rollback_ret);
+				"output write failed (%d), output rollback failed (%d), shutdown %d\n",
+				ret, rollback_ret, shutdown_ret);
 			goto out;
 		}
 
@@ -516,9 +518,10 @@ static int pm660l_lcdb_set_voltage_sel(struct regulator_dev *rdev,
 						  GENMASK(4, 0), old_bst_sel);
 			if (rollback_ret) {
 				lcdb->fault_latched = true;
+				shutdown_ret = pm660l_lcdb_force_shutdown(lcdb);
 				dev_err(lcdb->dev,
-					"output write failed (%d), boost rollback failed (%d)\n",
-					ret, rollback_ret);
+					"output write failed (%d), boost rollback failed (%d), shutdown %d\n",
+					ret, rollback_ret, shutdown_ret);
 			}
 		}
 		goto out;
@@ -535,9 +538,10 @@ static int pm660l_lcdb_set_voltage_sel(struct regulator_dev *rdev,
 						  GENMASK(4, 0), old_bst_sel);
 			if (rollback_ret) {
 				lcdb->fault_latched = true;
+				shutdown_ret = pm660l_lcdb_force_shutdown(lcdb);
 				dev_err(lcdb->dev,
-					"boost reduction failed (%d), restoring old boost failed (%d)\n",
-					ret, rollback_ret);
+					"boost reduction failed (%d), restore failed (%d), shutdown %d\n",
+					ret, rollback_ret, shutdown_ret);
 			}
 		}
 	}
