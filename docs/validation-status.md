@@ -241,8 +241,9 @@ through GitHub's repository API/raw-file access.
 - No Kconfig or Makefile edits have been applied to a complete kernel tree;
   the project repository currently holds the driver source and integration
   instructions, not a full kernel checkout.
-- No YAML binding, PM660L DTSI node, or Platina consumer mapping has been
-  added. The SPMI interrupt SID discrepancy remains unresolved.
+- A PM660L-specific YAML binding draft has been added. The PM660L DTSI
+  node and Platina enablement/consumer mapping have not yet been applied.
+  The vendor SPMI parent and SID 3 interrupt route are now verified.
 - No KUnit/regmap fault injection, sparse, dt_binding_check, dtbs_check,
   kernel build, boot image, flash, or device test has been performed.
 - Driver status: implementation in progress; not production-ready and not
@@ -265,8 +266,9 @@ through GitHub's repository API/raw-file access.
   They are not yet applied to a full target kernel source tree.
 - Added docs/pm660l-lcdb-driver-review.md documenting implemented scope,
   excluded vendor features, and remaining blockers.
-- The unresolved vendor interrupt SID (LCDB child under USID 2 but IRQ
-  specifier SID 3) remains a hard blocker for final DTS/binding integration.
+- The full vendor DTS confirms the LCDB child is under PM660L USID 3 and
+  its interrupt specifier also uses SID 3; the earlier mismatch was a
+  false alarm caused by reading an excerpt without its parent scope.
 - No full kernel compile, modpost, checkpatch, dt_binding_check, regmap
   fault-injection test or device hardware test has been run.
 - Existing host helper tests remain the only executed tests; they do not
