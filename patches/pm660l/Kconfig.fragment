@@ -1,0 +1,8 @@
+config REGULATOR_QCOM_PM660L_LCDB
+	tristate "Qualcomm PM660L LCDB regulator"
+	depends on MFD_SPMI_PMIC
+	depends on OF
+	help
+	  This driver supports the PM660L LCD bias/boost block. The block
+	  exposes separate positive LDO and negative NCP regulator outputs
+	  which share a boost converter and module enable control.
