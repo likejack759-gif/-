@@ -27,6 +27,7 @@
 
 #define PM660L_LCDB_DRV_NAME          "qcom-pm660l-lcdb"
 #define PM660L_LCDB_MODULE_RDY_BIT    BIT(7)
+#define PM660L_LCDB_EN_TOUCH_WAKE_BIT  BIT(3)
 #define PM660L_LCDB_MAX_STARTUP_US    100000
 #define PM660L_LCDB_POLL_US           1000
 #define PM660L_LCDB_SC_CONFIRM_US     2000
@@ -482,10 +483,11 @@ static const struct regulator_ops pm660l_lcdb_ops = {
 static irqreturn_t pm660l_lcdb_sc_irq_thread(int irq, void *data)
 {
 	struct pm660l_lcdb *lcdb = data;
-	unsigned int status;
+	unsigned int status, misc, outputs;
 	s64 elapsed;
 	int ret;
 	irqreturn_t irqret = IRQ_HANDLED;
+	bool confirmed = false;
 
 	mutex_lock(&lcdb->lock);
 
@@ -498,15 +500,34 @@ static irqreturn_t pm660l_lcdb_sc_irq_thread(int irq, void *data)
 		goto out;
 	}
 
-	usleep_range(PM660L_LCDB_SC_CONFIRM_US,
-		     PM660L_LCDB_SC_CONFIRM_US + 100);
-	ret = pm660l_lcdb_read(lcdb, PM660L_LCDB_INT_RT_REG, &status);
+	ret = pm660l_lcdb_read(lcdb, PM660L_LCDB_MISC_CTL_REG, &misc);
 	if (ret)
 		goto out;
-	if (!(status & PM660L_LCDB_SC_ERROR_BIT)) {
-		ret = IRQ_HANDLED;
-		goto out;
+
+	if (misc & PM660L_LCDB_EN_TOUCH_WAKE_BIT) {
+		/*
+		 * Touch-wake mode uses the two per-output VREG_OK status
+		 * bytes after the LCDB blanking interval.  The helper
+		 * preserves the vendor-required STS3/STS4 pre-write.
+		 */
+		usleep_range(300, 310);
+		ret = pm660l_lcdb_read_output_status(lcdb, &outputs);
+		if (ret)
+			goto out;
+		confirmed = outputs != PM660L_LCDB_REQ_MASK;
+	} else {
+		/* Confirm a persistent short-circuit after blanking time. */
+		usleep_range(PM660L_LCDB_SC_CONFIRM_US,
+			     PM660L_LCDB_SC_CONFIRM_US + 100);
+		ret = pm660l_lcdb_read(lcdb, PM660L_LCDB_INT_RT_REG,
+				       &status);
+		if (ret)
+			goto out;
+		confirmed = !!(status & PM660L_LCDB_SC_ERROR_BIT);
 	}
+
+	if (!confirmed)
+		goto out;
 
 	/* Never restart after an unsuccessful shutdown. */
 	ret = pm660l_lcdb_module_disable(lcdb);
@@ -516,21 +537,19 @@ static irqreturn_t pm660l_lcdb_sc_irq_thread(int irq, void *data)
 	}
 
 	elapsed = ktime_us_delta(ktime_get(), lcdb->last_sc_time);
-	if (!lcdb->last_sc_time || elapsed > PM660L_LCDB_SC_WINDOW_US)
+	if (!ktime_to_ns(lcdb->last_sc_time) ||
+	    elapsed > PM660L_LCDB_SC_WINDOW_US)
 		lcdb->sc_count = 0;
 	lcdb->sc_count++;
 	lcdb->last_sc_time = ktime_get();
 
 	if (lcdb->sc_count > PM660L_LCDB_SC_MAX_RETRIES) {
 		lcdb->fault_latched = true;
-		ret = IRQ_HANDLED;
 		goto out;
 	}
 
-	if (!lcdb->request_mask) {
-		ret = IRQ_HANDLED;
+	if (!lcdb->request_mask)
 		goto out;
-	}
 
 	usleep_range(PM660L_LCDB_SC_RECOVERY_US,
 		     PM660L_LCDB_SC_RECOVERY_US + 100);
