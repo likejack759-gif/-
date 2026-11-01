@@ -119,3 +119,14 @@ If a new problem is outside this policy:
 - https://docs.kernel.org/devicetree/bindings/writing-schema.html
 - https://docs.kernel.org/process/maintainer-handbooks.html
 - https://docs.kernel.org/driver-api/
+
+
+## Subsystem addendum: regulators
+
+The PM660L LCDB-specific acceptance checklist is maintained in
+`docs/regulator-patch-requirements.md`. It adds regulator-core reference
+count/state semantics, shared-rail ownership, negative errno propagation,
+PMIC revision handling, short-circuit IRQ recovery and regulator-focused
+test cases. Apply this addendum before implementing any regulator driver
+change. Regulator DT binding subject prefixes and routing must follow the
+current regulator/DT maintainer guidance.
