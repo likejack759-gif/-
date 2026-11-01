@@ -1,0 +1,1 @@
+obj-$(CONFIG_REGULATOR_QCOM_PM660L_LCDB) += qcom-pm660l-lcdb-regulator.o
