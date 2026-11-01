@@ -138,3 +138,36 @@ been generated, compiled, hardware-tested or flashed. The next implementation
 step is to derive the PM660L-specific regulator operations and state machine
 from the vendor behavior while using the upstream PMIC/revid and regulator
 framework APIs.
+
+
+## Additional callback and concurrency findings from source re-read
+
+The regulator callback paths require more than the already-listed shared-enable
+repair:
+
+- Both LDO and NCP `.set_voltage` callbacks receive `min_uV` and
+  `max_uV`, but the vendor implementation writes `min_uV / 1000` without
+  validating the requested interval or ensuring the selected hardware voltage
+  lies within the caller's maximum. The upstream port must implement the
+  regulator-core voltage-range contract, including rounding/selector behavior
+  appropriate to the hardware.
+- The vendor voltage callbacks update cached requested voltage before the
+  hardware operation succeeds. Failure can leave cached state inconsistent
+  with register state. The port must stage requested state and commit it only
+  after successful programming, or explicitly roll back.
+- Voltage callbacks do not take the LCDB state mutex, while enable/disable and
+  short-circuit recovery do. The upstream design must serialize all accesses
+  that affect shared boost/headroom and per-rail voltage state without
+  introducing IRQ/workqueue lock inversion.
+- The class `secure_mode` attribute changes `secure_mode` and disables or
+  enables the IRQ without synchronizing the flag with regulator operations.
+  The vendor callbacks then return success while doing no hardware operation.
+  The upstream driver should not preserve this silent-success behavior; define
+  a safe, synchronized transition policy and return a real error when an
+  operation cannot be performed.
+- The shared boost voltage is derived from both LDO and NCP targets. Therefore
+  updating one output is a multi-register transaction involving shared BST
+  state and one output state. Partial failures and concurrent changes need a
+  deliberate ordering/rollback policy.
+
+These points are source-audit findings, not evidence of a completed fix.
