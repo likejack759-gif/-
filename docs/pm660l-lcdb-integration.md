@@ -82,7 +82,8 @@ semantics.
 - Models shared module enable with independent Linux consumer request bits.
 - Reports is_enabled from each output's physical VREG_OK status.
 - Reads the two status bytes using the vendor-required STS3/STS4 pre-write.
-- Uses the PM660L REV4 < 0x02 NCP SCP workaround.
+- Performs the vendor PM660L module on/off enable pulse on every revision;
+  REV4 < 0x02 additionally uses the 10 ms discharge and DIS_SCP toggle.
 - For PMIC revisions using IRQ recovery, confirms SC events using the
   vendor touch-wake 300 us or normal 2 ms blanking path.
 - Bounds repeated recovery attempts and latches a fault after persistent
