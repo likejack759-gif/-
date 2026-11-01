@@ -356,3 +356,18 @@ through GitHub's repository API/raw-file access.
   trees/overwrites, uses intent-to-add temporarily so git diff --check
   includes new files, then resets the index without committing. The script
   has not yet been executed against a complete kernel checkout.
+
+
+- Added a fixed-base guard for the LCDB peripheral (0xec00) in both driver
+  probe and binding schema.
+- Strengthened voltage transaction failure handling: if output/boost
+  rollback cannot restore a known state, the provider fault-latches and
+  immediately attempts bounded module shutdown.
+- Added readback verification after normal module shutdown. A failed SPMI
+  write is retried once; an unreadable/ambiguous state remains fault-latched.
+- The exact binding YAML was parsed again after the fixed-register
+  constraint was added; PyYAML syntax parse passed. This is not
+  dt_binding_check.
+- The guarded kernel-tree preparation script now includes new files in
+  git diff --check via temporary intent-to-add entries, then resets the
+  index. It has not been executed against a complete v7.3.1 checkout.
