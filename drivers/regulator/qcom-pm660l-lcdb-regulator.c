@@ -781,6 +781,10 @@ static int pm660l_lcdb_probe(struct platform_device *pdev)
 	if (ret)
 		return dev_err_probe(&pdev->dev, ret, "missing LCDB reg base\n");
 
+	if (lcdb->base != PM660L_LCDB_BASE)
+		return dev_err_probe(&pdev->dev, -EINVAL,
+				     "unexpected LCDB base 0x%x\n", lcdb->base);
+
 	lcdb->regmap = dev_get_regmap(pdev->dev.parent, NULL);
 	if (!lcdb->regmap)
 		return dev_err_probe(&pdev->dev, -ENODEV,
