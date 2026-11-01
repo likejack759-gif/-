@@ -535,7 +535,9 @@ static irqreturn_t pm660l_lcdb_sc_irq_thread(int irq, void *data)
 		ret = regmap_read(lcdb->regmap,
 				  lcdb->base + PM660L_LCDB_MISC_CTL_REG, &misc);
 	mutex_unlock(&lcdb->lock);
-	if (ret || !(status & PM660L_LCDB_SC_ERROR_BIT))
+	if (ret)
+		goto fault_unlocked;
+	if (!(status & PM660L_LCDB_SC_ERROR_BIT))
 		return IRQ_HANDLED;
 
 	if (misc & PM660L_LCDB_TOUCH_WAKE_BIT) {
@@ -559,7 +561,9 @@ static irqreturn_t pm660l_lcdb_sc_irq_thread(int irq, void *data)
 		ret = regmap_read(lcdb->regmap,
 				  lcdb->base + PM660L_LCDB_INT_RT_REG, &status);
 		mutex_unlock(&lcdb->lock);
-		if (ret || !(status & PM660L_LCDB_SC_ERROR_BIT))
+		if (ret)
+			goto fault_unlocked;
+		if (!(status & PM660L_LCDB_SC_ERROR_BIT))
 			return IRQ_HANDLED;
 	}
 
