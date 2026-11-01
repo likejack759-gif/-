@@ -285,7 +285,7 @@ static int pm660l_lcdb_enable(struct regulator_dev *rdev)
 			ret = -EIO;
 			goto out;
 		}
-		ret = pm660l_lcdb_module_enable(lcdb, lcdb->request_mask);
+		ret = pm660l_lcdb_module_enable(lcdb, rail->request_bit);
 		if (ret)
 			goto out;
 		started_module = true;
