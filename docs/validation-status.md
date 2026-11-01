@@ -347,3 +347,11 @@ through GitHub's repository API/raw-file access.
   SPMI base other than 0xec00, and the binding constrains reg to 0xec00.
   This prevents a malformed board node from directing writes at another
   PMIC peripheral.
+
+
+- Added scripts/prepare-pm660l-lcdb-kernel-tree.py to integrate the driver,
+  binding, Kconfig/Makefile entries and disabled USID 3 DTSI node into an
+  exact clean v7.3.1 checkout. It verifies the target commit, refuses dirty
+  trees/overwrites, uses intent-to-add temporarily so git diff --check
+  includes new files, then resets the index without committing. The script
+  has not yet been executed against a complete kernel checkout.
