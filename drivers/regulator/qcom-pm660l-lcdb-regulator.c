@@ -253,6 +253,7 @@ static int pm660l_lcdb_enable(struct regulator_dev *rdev)
 	struct pm660l_lcdb_rail *rail = rdev_get_drvdata(rdev);
 	struct pm660l_lcdb *lcdb = rail->lcdb;
 	unsigned int status, next_mask;
+	bool started_module = false;
 	int enable_module, ret;
 
 	mutex_lock(&lcdb->lock);
@@ -283,6 +284,7 @@ static int pm660l_lcdb_enable(struct regulator_dev *rdev)
 		ret = pm660l_lcdb_module_enable(lcdb, true);
 		if (ret)
 			goto out;
+		started_module = true;
 	} else {
 		ret = pm660l_lcdb_read_output_status(lcdb, &status);
 		if (ret)
@@ -292,6 +294,16 @@ static int pm660l_lcdb_enable(struct regulator_dev *rdev)
 
 	if (!(lcdb->output_good_mask & rail->request_bit)) {
 		ret = -EIO;
+		if (started_module) {
+			int shutdown_ret = pm660l_lcdb_module_disable(lcdb);
+
+			if (shutdown_ret) {
+				lcdb->fault_latched = true;
+				dev_err(lcdb->dev,
+					"output did not become ready (%d), shutdown failed (%d)\n",
+					ret, shutdown_ret);
+			}
+		}
 		goto out;
 	}
 
