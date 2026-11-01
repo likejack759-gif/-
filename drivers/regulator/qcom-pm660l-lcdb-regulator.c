@@ -793,26 +793,23 @@ static int pm660l_lcdb_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, lcdb);
 
 	/*
-	 * The vendor DTS currently has an unresolved SPMI interrupt SID
-	 * discrepancy. Keep IRQ optional until the binding/DTS routing is
-	 * independently verified; the driver still reports physical status.
+	 * PM660L revisions using IRQ-driven short-circuit recovery must have
+	 * the verified USID 3 "sc-irq" route. Older revisions use the
+	 * hardware-specific SCP workaround instead.
 	 */
 	if (!pm660l_lcdb_needs_ncp_scp_wa(lcdb->pmic->major)) {
 		irq = platform_get_irq_byname(pdev, PM660L_LCDB_IRQ_NAME);
-		if (irq == -EPROBE_DEFER)
-			return irq;
-		if (irq >= 0) {
-			ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
-							pm660l_lcdb_sc_irq_thread,
-							IRQF_ONESHOT,
-							"pm660l-lcdb-sc", lcdb);
-			if (ret)
-				return dev_err_probe(&pdev->dev, ret,
-						     "failed to request SC IRQ\n");
-		} else {
-			dev_warn(&pdev->dev,
-				 "SC IRQ unavailable; automatic short-circuit recovery disabled\n");
-		}
+		if (irq < 0)
+			return dev_err_probe(&pdev->dev, irq,
+					     "required SC IRQ is unavailable\\n");
+
+		ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
+						pm660l_lcdb_sc_irq_thread,
+						IRQF_ONESHOT,
+						"pm660l-lcdb-sc", lcdb);
+		if (ret)
+			return dev_err_probe(&pdev->dev, ret,
+					     "failed to request SC IRQ\\n");
 	}
 
 	dev_info(&pdev->dev,
