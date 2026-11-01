@@ -71,8 +71,8 @@ blocker; the binding and board DTS can now encode the verified topology.
 
 ## Review cautions
 
-- Do not add the LCDB node to platina DTS until the SID discrepancy is
-  resolved and the binding passes dt_binding_check.
+- Do not enable the LCDB node in Platina DTS until the binding passes
+  dt_binding_check and the driver passes a full-tree compile and review.
 - Do not enable panel or touch consumers until both regulator outputs are
   validated.
 - Do not call this driver complete, compiled or hardware-tested.
