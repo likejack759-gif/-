@@ -50,6 +50,13 @@ drivers, firmware and hardware dependencies have been verified.
 - No DTB/DTBO has been boot-tested on hardware.
 - No kernel image has been built or flashed as part of this change.
 
+## PM660L LCDB porting audit
+
+A separate source audit is recorded in `docs/pm660l-lcdb-porting-audit.md`.
+It identifies the upstream PMIC API integration, PM660L register behavior,
+shared-output state requirements and vendor-driver defects. No LCDB driver
+patch is claimed complete yet.
+
 ## Next validation steps
 
 1. Apply the complete three-patch series to an exact Linux v7.3.1 source tree.
