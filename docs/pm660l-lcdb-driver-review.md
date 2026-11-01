@@ -20,7 +20,9 @@ The first driver implementation provides:
 - Separate regulator devices for LDO and NCP child nodes.
 - Shared module-enable ownership tracked independently from physical
   LDO/NCP VREG_OK status.
-- PM660L v1.x NCP SCP workaround gated by PMIC REV4 (major < 0x02).
+- Vendor PM660L enable pulse (module on/off) on every PM660L revision;
+  the 10 ms discharge and DIS_SCP toggle are additionally gated by
+  PMIC REV4 (major < 0x02).
 - Per-output selector mapping and coordinated shared boost voltage.
 - Boost-before-output sequencing when raising the required boost voltage.
 - Output-before-boost sequencing when lowering boost voltage.
