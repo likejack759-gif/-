@@ -316,3 +316,10 @@ through GitHub's repository API/raw-file access.
   the driver source.
 - The Platina DTS does not yet enable the LCDB node or connect panel/touch
   consumers. Do not enable those supplies until full-tree validation.
+
+
+- Vendor-source cross-check correction: qpnp_lcdb_enable_wa() performs the
+  short MODULE_EN on/off pulse for every PM660L revision. Only the 10 ms
+  MID-discharge delay and DIS_SCP toggle are conditional on REV4 < 0x02.
+  The driver now follows that distinction; the common pulse is not limited
+  to pre-v2.0 devices.
