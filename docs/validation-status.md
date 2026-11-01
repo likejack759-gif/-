@@ -186,3 +186,16 @@ this step. This is a verified upstream-reference review and design milestone.
 The PM660L driver itself is not yet implemented. Next code work is the
 provider state machine and PM660L-only register operations, followed by
 regmap fault-injection tests and full v7.3.1 build integration.
+
+- Extended the pure helper layer with a two-output request-mask transition
+  model, PM660L register offsets/status bits, revision-4 workaround gate
+  (rev4 < 0x02), and independent LDO/NCP VREG_OK decoding.
+- Extended the host fixture to cover LDO-first then NCP enable, disabling
+  one rail while the other remains requested, last-request shutdown,
+  invalid/unbalanced requests, revision 1.0/1.1 versus 2.0 workaround
+  selection, and all four output-good combinations.
+- Re-ran with:
+  gcc -std=c11 -Wall -Wextra -Werror -O2
+  tests/pm660l-lcdb-selector-test.c -o selector-test
+  ./selector-test
+  Result: exit status 0; output "PM660L LCDB helper tests: PASS".
