@@ -63,7 +63,7 @@ patch is claimed complete yet.
 
 ## Patch-submission standard
 
-The project-wide rules are in `docs/patch-submission-standard.md`. For each
+The project-wide rules are in `docs/patch-submission-policy.md`. For each
 new subsystem or issue not covered by that standard, consult the current
 subsystem-specific upstream documentation and maintainer workflow first,
 then extend the acceptance checklist before implementation.
