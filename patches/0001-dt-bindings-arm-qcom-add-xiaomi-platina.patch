@@ -1,7 +1,7 @@
 diff --git a/Documentation/devicetree/bindings/arm/qcom.yaml b/Documentation/devicetree/bindings/arm/qcom.yaml
 --- a/Documentation/devicetree/bindings/arm/qcom.yaml
 +++ b/Documentation/devicetree/bindings/arm/qcom.yaml
-@@ -937,6 +937,7 @@
+@@ -937,4 +937,5 @@
        - items:
            - enum:
                - xiaomi,lavender
