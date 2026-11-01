@@ -150,3 +150,86 @@ maintainer/list. Device-tree binding changes must additionally follow
 
 No device I2C transaction, source build, binding validation or hardware test
 was performed during this source review.
+
+
+## Tianma NT36672A upstream panel driver source-level review (2026-11-01)
+
+The exact Linux v7.3.1 source and binding were fetched and reviewed:
+
+- Driver blob: `464d9ce47d87dc857c3a565a63156ac79ddeb30c`.
+- Binding blob: `5d16d85117254ce479cfe9b9b33df8eeafeed1e1`.
+- Upstream compatible is `tianma,fhd-video` with fallback
+  `novatek,nt36672a`; its descriptor is not a generic NT36672A mode.
+- Upstream mode is 1080x2246, pixel clock 161331 kHz, horizontal
+  porches 40/20/44 and vertical porches 15/2/8. Platina runtime evidence
+  instead identifies 1080x2280, HFP/HBP/HSA 92/140/20 and
+  VFP/VBP/VSA 16/10/2. The modes are materially different and must not be
+  merged by changing only the active height.
+- Upstream uses four RGB888 lanes and video mode with LPM, HSE,
+  non-continuous clock and burst flags. Platina is also four-lane video
+  mode, but its exact host flags/clock behavior still need confirmation
+  from the runtime/vendor DSI host configuration.
+- Upstream supply enable loads are 62 mA for vddio and 100 mA each for
+  vddpos/vddneg. Platina vendor panel data records 32 mA for its 1.8 V
+  I/O rail, 100 mA for LAB and 100 mA for IBB. These are not equivalent
+  regulator constraints; preserve the Platina values and validate how
+  regulator load is represented by the target host/PMIC drivers.
+- Upstream reset sequence drives reset high for 200 ms then low for 200 ms.
+  Platina vendor reset data is a separate byte sequence associated with
+  its panel power/reset implementation. Do not substitute the upstream
+  200 ms sequence or assume the GPIO polarity matches.
+- Upstream prepare sends its built-in init part 1, DCS exit-sleep, waits
+  70 ms, sends display-on, then init part 2 and waits 120 ms. Unprepare
+  sends deinit commands, display-off, waits 120 ms, enters sleep, waits
+  60 ms, then asserts reset and disables supplies. This command ordering
+  is not proven equivalent to the Platina vendor sequence.
+- Upstream includes a hard-coded Tianma command table that programs
+  1080x2246 and brightness/control registers. Its command stream cannot
+  be reused unchanged for Platina's 1080x2280 panel.
+- Upstream panel binding requires vddio, vddpos, vddneg, reset-gpios and
+  a DSI graph port. Platina maps vddio to PM660 L11 and positive/negative
+  rails to PM660L LCDB LDO/NCP. The electrical rails are conceptually
+  similar, but the LCDB regulator provider must be validated before the
+  consumer node can be enabled.
+
+## Display subsystem maintainer and DT submission requirements
+
+The v7.3.1 `MAINTAINERS` entry for `DRM DRIVER FOR NOVATEK NT36672A
+PANELS` lists Sumit Semwal <sumit.semwal@linaro.org> and the DRM misc
+maintainer tree. The general DRM panel subsystem is maintained by Neil
+Armstrong and uses `dri-devel@lists.freedesktop.org`.
+
+The target `Documentation/devicetree/bindings/submitting-patches.rst`
+requires the binding/documentation patch to be separate and before driver
+code, a successful `make dt_binding_check`, strict DT example style checks,
+and DTS changes as a separate posting or at the end of a combined series.
+It also requires compatible strings to be documented before they are used
+in DTS. The binding patch is sent to `devicetree@vger.kernel.org` with
+the relevant DT maintainers copied.
+
+## Required evidence before a Platina panel variant is coded
+
+1. Retrieve the exact vendor 1621-byte init payload and 54-byte off payload
+   into the project archive, preserving packet data types, flags, delays
+   and command ordering. A length-only record is insufficient for a
+   byte-for-byte comparison.
+2. Reconstruct the vendor DSI mode from the original DTS/driver, including
+   pixel clock, porches, lane count, RGB format, traffic mode, clock
+   behavior, EOT and low-power command settings. Cross-check against the
+   active boot display state where readable.
+3. Decode the vendor reset byte array against the exact downstream parser
+   implementation; do not infer GPIO transitions from the raw bytes alone.
+4. Verify the PM660 L11 and PM660L LCDB load/voltage/timing requirements,
+   including the panel power-on/off delays and sequencing.
+5. Implement a Platina-specific descriptor/compatible rather than changing
+   the existing upstream `tianma,fhd-video` descriptor, so Poco F1 and
+   other users retain their current behavior.
+6. Add tests or reviewable static checks for mode totals/refresh,
+   command payload integrity and power-sequence ordering; then run
+   `checkpatch.pl`, `dt_binding_check`, panel driver object build and
+   full DT validation in the exact v7.3.1 tree.
+
+No panel command was sent to hardware, no source was compiled, and no
+binding/DT validation was run during this audit. The exact vendor command
+payload bytes are not currently reproduced in this document; implementation
+must wait until those bytes are preserved in a source-backed project file.
