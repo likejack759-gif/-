@@ -63,6 +63,18 @@ int main(void)
 		assert(pm660l_lcdb_next_enable_mask(0, 4, &mask, &action) == -1);
 	}
 
-	puts("PM660L LCDB selector and shared-request tests: PASS");
+
+	assert(pm660l_lcdb_needs_ncp_scp_wa(0) == 1);
+	assert(pm660l_lcdb_needs_ncp_scp_wa(1) == 1);
+	assert(pm660l_lcdb_needs_ncp_scp_wa(2) == 0);
+	assert(pm660l_lcdb_decode_output_status(0x80, 0x00) ==
+	       PM660L_LCDB_REQ_LDO);
+	assert(pm660l_lcdb_decode_output_status(0x00, 0x80) ==
+	       PM660L_LCDB_REQ_NCP);
+	assert(pm660l_lcdb_decode_output_status(0x80, 0x80) ==
+	       PM660L_LCDB_REQ_MASK);
+	assert(pm660l_lcdb_decode_output_status(0x00, 0x00) == 0);
+
+	puts("PM660L LCDB helper tests: PASS");
 	return 0;
 }
