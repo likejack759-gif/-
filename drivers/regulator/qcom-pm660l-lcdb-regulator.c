@@ -172,6 +172,8 @@ static int pm660l_lcdb_enable_wa(struct pm660l_lcdb *lcdb)
 }
 
 static int pm660l_lcdb_module_disable(struct pm660l_lcdb *lcdb);
+static int pm660l_lcdb_module_disable(struct pm660l_lcdb *lcdb);
+static int pm660l_lcdb_force_shutdown(struct pm660l_lcdb *lcdb);
 
 static int pm660l_lcdb_module_enable(struct pm660l_lcdb *lcdb,
 				     unsigned int required_mask)
@@ -183,7 +185,7 @@ static int pm660l_lcdb_module_enable(struct pm660l_lcdb *lcdb,
 
 	ret = pm660l_lcdb_enable_wa(lcdb);
 	if (ret) {
-		int disable_ret = pm660l_lcdb_module_disable(lcdb);
+		int disable_ret = pm660l_lcdb_force_shutdown(lcdb);
 
 		lcdb->fault_latched = true;
 		if (disable_ret)
@@ -197,7 +199,7 @@ static int pm660l_lcdb_module_enable(struct pm660l_lcdb *lcdb,
 			   lcdb->base + PM660L_LCDB_ENABLE_REG,
 			   PM660L_LCDB_MODULE_EN_BIT);
 	if (ret) {
-		int disable_ret = pm660l_lcdb_module_disable(lcdb);
+		int disable_ret = pm660l_lcdb_force_shutdown(lcdb);
 
 		if (disable_ret)
 			lcdb->fault_latched = true;
@@ -207,7 +209,7 @@ static int pm660l_lcdb_module_enable(struct pm660l_lcdb *lcdb,
 	lcdb->module_enabled = true;
 	ret = pm660l_lcdb_poll_module_ready(lcdb, required_mask);
 	if (ret) {
-		int disable_ret = pm660l_lcdb_module_disable(lcdb);
+		int disable_ret = pm660l_lcdb_force_shutdown(lcdb);
 
 		if (disable_ret) {
 			lcdb->fault_latched = true;
@@ -248,6 +250,23 @@ static int pm660l_lcdb_module_disable(struct pm660l_lcdb *lcdb)
 	lcdb->module_enabled = false;
 	lcdb->output_good_mask = 0;
 	return 0;
+}
+
+/* Caller holds lcdb->lock. Retry once because an SPMI write error may be transient. */
+static int pm660l_lcdb_force_shutdown(struct pm660l_lcdb *lcdb)
+{
+	int ret;
+
+	ret = pm660l_lcdb_force_shutdown(lcdb);
+	if (!ret)
+		return 0;
+
+	usleep_range(1000, 1100);
+	ret = pm660l_lcdb_force_shutdown(lcdb);
+	if (ret)
+		lcdb->fault_latched = true;
+
+	return ret;
 }
 
 static int pm660l_lcdb_enable(struct regulator_dev *rdev)
@@ -297,7 +316,7 @@ static int pm660l_lcdb_enable(struct regulator_dev *rdev)
 	if (!(lcdb->output_good_mask & rail->request_bit)) {
 		ret = -EIO;
 		if (started_module) {
-			int shutdown_ret = pm660l_lcdb_module_disable(lcdb);
+			int shutdown_ret = pm660l_lcdb_force_shutdown(lcdb);
 
 			if (shutdown_ret) {
 				lcdb->fault_latched = true;
@@ -337,7 +356,7 @@ static int pm660l_lcdb_disable(struct regulator_dev *rdev)
 
 	/* Do not commit the request change unless the shared shutdown succeeds. */
 	if (disable_module) {
-		ret = pm660l_lcdb_module_disable(lcdb);
+		ret = pm660l_lcdb_force_shutdown(lcdb);
 		if (ret)
 			goto out;
 	}
@@ -604,7 +623,7 @@ static irqreturn_t pm660l_lcdb_sc_irq_thread(int irq, void *data)
 
 	mutex_lock(&lcdb->lock);
 	if (lcdb->fault_latched) {
-		ret = pm660l_lcdb_module_disable(lcdb);
+		ret = pm660l_lcdb_force_shutdown(lcdb);
 		if (ret)
 			dev_err(lcdb->dev,
 				"LCDB is fault-latched; shutdown retry failed: %d\n",
@@ -618,7 +637,7 @@ static irqreturn_t pm660l_lcdb_sc_irq_thread(int irq, void *data)
 
 	/* A bootloader-enabled block can fault before any consumer requests it. */
 	if (!lcdb->request_mask) {
-		ret = pm660l_lcdb_module_disable(lcdb);
+		ret = pm660l_lcdb_force_shutdown(lcdb);
 		if (ret)
 			goto fault_locked;
 		lcdb->fault_latched = true;
@@ -639,7 +658,7 @@ static irqreturn_t pm660l_lcdb_sc_irq_thread(int irq, void *data)
 	lcdb->sc_count++;
 	lcdb->sc_window_start = ktime_get();
 
-	ret = pm660l_lcdb_module_disable(lcdb);
+	ret = pm660l_lcdb_force_shutdown(lcdb);
 	if (ret)
 		goto fault_locked;
 
@@ -671,7 +690,7 @@ static irqreturn_t pm660l_lcdb_sc_irq_thread(int irq, void *data)
 
 fault_locked:
 	{
-		int shutdown_ret = pm660l_lcdb_module_disable(lcdb);
+		int shutdown_ret = pm660l_lcdb_force_shutdown(lcdb);
 
 		lcdb->fault_latched = true;
 		dev_err(lcdb->dev,
@@ -685,7 +704,7 @@ handled:
 fault_unlocked:
 	mutex_lock(&lcdb->lock);
 	{
-		int disable_ret = pm660l_lcdb_module_disable(lcdb);
+		int disable_ret = pm660l_lcdb_force_shutdown(lcdb);
 
 		lcdb->fault_latched = true;
 		dev_err(lcdb->dev,
