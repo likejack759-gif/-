@@ -25,7 +25,7 @@
 #define PM660L_LCDB_TOUCH_WAKE_BIT BIT(3)
 #define PM660L_LCDB_IRQ_NAME		"sc-irq"
 #define PM660L_LCDB_STATUS_POLL_US	1000
-#define PM660L_LCDB_STATUS_POLLS	20
+#define PM660L_LCDB_STATUS_POLLS	100
 #define PM660L_LCDB_SC_RETRY_WINDOW_US	1000000
 #define PM660L_LCDB_SC_RETRY_MAX	10
 
@@ -695,27 +695,30 @@ static int pm660l_lcdb_probe(struct platform_device *pdev)
 				     "parent PMIC is not PM660L (subtype 0x%x)\n",
 				     lcdb->pmic->subtype);
 
-	/* Set MODULE_RDY without changing the bootloader's enable state. */
-	ret = regmap_read(lcdb->regmap,
-			  lcdb->base + PM660L_LCDB_MODULE_RDY_REG, &val);
-	if (ret)
-		return dev_err_probe(&pdev->dev, ret,
-				     "failed to read MODULE_RDY\n");
-	if (!(val & BIT(7))) {
-		ret = regmap_update_bits(lcdb->regmap,
-					 lcdb->base + PM660L_LCDB_MODULE_RDY_REG,
-					 BIT(7), BIT(7));
-		if (ret)
-			return dev_err_probe(&pdev->dev, ret,
-					     "failed to set MODULE_RDY\n");
-	}
-
+	/* Read the live module state before touching MODULE_RDY. */
 	ret = regmap_read(lcdb->regmap,
 			  lcdb->base + PM660L_LCDB_ENABLE_REG, &val);
 	if (ret)
 		return dev_err_probe(&pdev->dev, ret,
-				     "failed to read module enable state\n");
+				     "failed to read module enable state\\n");
 	lcdb->module_enabled = !!(val & PM660L_LCDB_MODULE_EN_BIT);
+
+	/* Match the vendor handoff: set MODULE_RDY only while the block is off. */
+	if (!lcdb->module_enabled) {
+		ret = regmap_read(lcdb->regmap,
+				  lcdb->base + PM660L_LCDB_MODULE_RDY_REG, &val);
+		if (ret)
+			return dev_err_probe(&pdev->dev, ret,
+					     "failed to read MODULE_RDY\\n");
+		if (!(val & BIT(7))) {
+			ret = regmap_update_bits(lcdb->regmap,
+						 lcdb->base + PM660L_LCDB_MODULE_RDY_REG,
+						 BIT(7), BIT(7));
+			if (ret)
+				return dev_err_probe(&pdev->dev, ret,
+						     "failed to set MODULE_RDY\\n");
+		}
+	}
 
 	/* Initial request ownership is empty; physical boot state is preserved. */
 	ret = pm660l_lcdb_read_output_status(lcdb, &lcdb->output_good_mask);
