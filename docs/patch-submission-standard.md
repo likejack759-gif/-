@@ -82,7 +82,8 @@ maintainer workflow. At minimum, review:
 Do not claim a generic checklist is sufficient for specialized subsystems
 such as DRM, input, regulator, power-supply, media, ASoC, remoteproc, WLAN,
 Bluetooth, USB or networking. Add their official subsystem-specific
-requirements when those areas are reached.
+requirements when those areas are reached. The regulator-specific checklist
+for PM660L LCDB is in `docs/regulator-subsystem-requirements.md`.
 
 ## 5. Required validation levels
 
