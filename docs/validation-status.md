@@ -341,3 +341,9 @@ through GitHub's repository API/raw-file access.
   discharge delay and DIS_SCP toggle are conditional on REV4 < 0x02.
 - Added a two-attempt forced-shutdown helper for uncertain SPMI shutdown
   writes. The final request mask is committed only after shutdown succeeds.
+
+
+- Added an explicit PM660L LCDB base-address guard: the driver rejects any
+  SPMI base other than 0xec00, and the binding constrains reg to 0xec00.
+  This prevents a malformed board node from directing writes at another
+  PMIC peripheral.
