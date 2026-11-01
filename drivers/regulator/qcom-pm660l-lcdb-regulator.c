@@ -641,10 +641,14 @@ static irqreturn_t pm660l_lcdb_sc_irq_thread(int irq, void *data)
 	goto handled;
 
 fault_locked:
-	lcdb->fault_latched = true;
-	dev_err(lcdb->dev,
-		"LCDB short-circuit recovery failed; outputs locked off (error %d)\n",
-		ret);
+	{
+		int shutdown_ret = pm660l_lcdb_module_disable(lcdb);
+
+		lcdb->fault_latched = true;
+		dev_err(lcdb->dev,
+			"LCDB short-circuit recovery failed (error %d), shutdown result %d\\n",
+			ret, shutdown_ret);
+	}
 handled:
 	mutex_unlock(&lcdb->lock);
 	return IRQ_HANDLED;
