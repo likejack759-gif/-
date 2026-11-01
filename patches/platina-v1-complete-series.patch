@@ -1,0 +1,60 @@
+diff --git a/Documentation/devicetree/bindings/arm/qcom.yaml b/Documentation/devicetree/bindings/arm/qcom.yaml
+--- a/Documentation/devicetree/bindings/arm/qcom.yaml
++++ b/Documentation/devicetree/bindings/arm/qcom.yaml
+@@ -937,4 +937,5 @@
+       - items:
+           - enum:
+               - xiaomi,lavender
++              - xiaomi,platina
+           - const: qcom,sdm660
+diff --git a/arch/arm64/boot/dts/qcom/sdm660-xiaomi-platina.dts b/arch/arm64/boot/dts/qcom/sdm660-xiaomi-platina.dts
+new file mode 100644
+--- /dev/null
++++ b/arch/arm64/boot/dts/qcom/sdm660-xiaomi-platina.dts
+@@ -0,0 +1,36 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/*
++ * Xiaomi Mi 8 Lite (platina)
++ *
++ * Conservative initial board description for the Linux v7.3.1 baseline.
++ * Hardware-specific peripherals are intentionally deferred until their
++ * bindings, drivers, power supplies and GPIO assignments are verified.
++ */
++
++/dts-v1/;
++
++#include "sdm660.dtsi"
++#include "pm660.dtsi"
++#include "pm660l.dtsi"
++
++/ {
++	model = "Xiaomi Mi 8 Lite";
++	compatible = "xiaomi,platina", "qcom,sdm660";
++	chassis-type = "handset";
++
++	aliases {
++		serial0 = &blsp1_uart2;
++	};
++
++	chosen {
++		stdout-path = "serial0:115200n8";
++	};
++};
++
++/*
++ * The UART2 label is inherited from the SDM630/SDM660 SoC description.
++ * Keep this as the only enabled board peripheral in the first baseline.
++ */
++&blsp1_uart2 {
++	status = "okay";
++};
+diff --git a/arch/arm64/boot/dts/qcom/Makefile b/arch/arm64/boot/dts/qcom/Makefile
+--- a/arch/arm64/boot/dts/qcom/Makefile
++++ b/arch/arm64/boot/dts/qcom/Makefile
+@@ -311,5 +311,6 @@
+ dtb-$(CONFIG_ARCH_QCOM)	+= sdm636-sony-xperia-ganges-mermaid.dtb
+ dtb-$(CONFIG_ARCH_QCOM)	+= sdm660-xiaomi-lavender.dtb
++dtb-$(CONFIG_ARCH_QCOM)	+= sdm660-xiaomi-platina.dtb
+ dtb-$(CONFIG_ARCH_QCOM)	+= sdm670-google-bonito-tianma.dtb
+ dtb-$(CONFIG_ARCH_QCOM)	+= sdm670-google-sargo.dtb
+ dtb-$(CONFIG_ARCH_QCOM)	+= sdm845-db845c.dtb
