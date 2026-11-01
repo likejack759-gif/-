@@ -149,8 +149,9 @@ must follow the target maintainer's current preference.
   acceptance conditions.
 - Corrected the requirements-document reference in the PM660L audit.
 
-No driver source code has been implemented, compiled or hardware-tested in
-this step. This is a verified upstream-reference review and design milestone.
+At the time of this upstream-reference review, no driver source had yet
+been implemented. Later implementation milestones are recorded below. This
+was a verified upstream-reference review and design milestone.
 
 
 ## PM660L LCDB first implementation milestone (2026-11-01)
@@ -185,9 +186,9 @@ this step. This is a verified upstream-reference review and design milestone.
 - This is a host selector fixture test only. It is not KUnit, does not
   compile the kernel driver, and does not validate SPMI/regmap transactions.
 
-The PM660L driver itself is not yet implemented. Next code work is the
-provider state machine and PM660L-only register operations, followed by
-regmap fault-injection tests and full v7.3.1 build integration.
+At this first helper milestone, the PM660L driver itself had not yet been
+implemented. Subsequent driver and binding implementation milestones are
+recorded below; the remaining work is full-tree integration and validation.
 
 - Extended the pure helper layer with a two-output request-mask transition
   model, PM660L register offsets/status bits, revision-4 workaround gate
