@@ -165,9 +165,9 @@ Until these items are confirmed, this document is a design contract, not
 a claim that the PM660L driver is implemented or safe to enable.
 
 
-## Evidence resolved and remaining blocker
+## Evidence resolved
 
-The target v7.3.1 PMIC API is now verified: qcom_pmic_get() returns
+The target v7.3.1 PMIC API is verified: qcom_pmic_get() returns
 struct qcom_spmi_pmic; PM660L subtype is 0x1a; major is loaded from
 PMIC_REV4. Vendor PM660L v2.0 uses REV4 value 0x02, and the NCP SCP
 workaround is required when major < 0x02.
@@ -175,11 +175,10 @@ workaround is required when major < 0x02.
 The output/boost selector mappings and the STS3/STS4 pre-write/read sequence
 are recorded in docs/pm660l-lcdb-register-map.md and have host fixture tests.
 
-One critical device-tree detail remains unresolved: the vendor LCDB node is
-nested under USID 2 but its interrupt specifier names slave ID 3. The SPMI
-interrupt binding defines the first cell as the slave ID. This must be
-verified before authoring the upstream PM660L node or final binding example.
-
+The complete vendor DTS parent scope is now verified: the LCDB node is
+under the PM660L USID 3 SPMI device, and its interrupt specifier uses SID 3.
+There is no SID mismatch. The driver may require the named SC IRQ on PMIC
+revisions that use the interrupt-driven recovery path.
 
 ## First driver implementation review (2026-11-01)
 
