@@ -21,6 +21,7 @@ properties:
     const: qcom,pm660l-lcdb-regulator
 
   reg:
+    $ref: /schemas/types.yaml#/definitions/uint32-array
     maxItems: 1
 
   interrupts:
